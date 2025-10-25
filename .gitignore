@@ -1,0 +1,8 @@
+# Archivos locales de Visual Studio / SSMS
+.vs/
+*.dbmdl
+*.sqlite
+*.suo
+*.user
+*.cache
+*.log
