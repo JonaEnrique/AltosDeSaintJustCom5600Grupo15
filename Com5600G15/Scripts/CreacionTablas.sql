@@ -59,3 +59,4 @@ CREATE TABLE GastoExtraordinarios (
     -- FOREIGN KEY (id_consorcio) REFERENCES Consorcio(id_consorcio)
 )
 GO
+
