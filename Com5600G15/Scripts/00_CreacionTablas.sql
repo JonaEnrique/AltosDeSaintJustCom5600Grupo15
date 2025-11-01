@@ -121,8 +121,7 @@ CREATE TABLE Persona
     apellido NVARCHAR(50),
     mail NVARCHAR(254),
     telefono VARCHAR(20),
-    tipo_cuenta CHAR(3) CHECK (tipo_cuenta IN ('CBU', 'CVU')),
-    codigo_cuenta CHAR(22) NOT NULL
+    cbu_cvu VARCHAR(25)
 )
 GO
 
