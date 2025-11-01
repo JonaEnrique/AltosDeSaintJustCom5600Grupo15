@@ -90,3 +90,18 @@ CREATE TABLE GastoOrdinario (
 
 GO
 
+CREATE TABLE EstadoFinanciero (
+	id_estado INT PRIMARY KEY IDENTITY(1,1), 
+	id_consorcio INT NOT NULL,
+	fecha DATE CHECK (YEAR(fecha) > 1958 AND YEAR(fecha) <= YEAR(SYSDATETIME())),
+	saldo_anterior DECIMAL(10,2),
+	ingreso_en_termino DECIMAL(10,2)
+	ingreso_adeudado DECIMAL(10,2),
+	ingreso_adelantado DECIMAL(10,2),
+	egresos_mes DECIMAL(10,2),
+	saldo_cierre DECIMAL(10,2),
+	CONSTRAINT fk_estadoFinanciero_consorcio FOREIGN KEY (id_consorcio) REFERENCES Consorcio(id_consorcio)
+);
+
+
+
