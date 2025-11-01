@@ -36,6 +36,17 @@ GO
 
 -- *************** CREACIÓN DE TABLAS *************** --
 
+CREATE TABLE Persona
+(
+    dni INT PRIMARY KEY,
+    nombre NVARCHAR(50),
+    apellido NVARCHAR(50),
+    mail NVARCHAR(254),
+    telefono VARCHAR(20),
+    cbu_cvu VARCHAR(25)
+)
+GO
+
 CREATE TABLE PagoAsociado (
     id_expensa       INT IDENTITY(1,1) PRIMARY KEY,
     id_unidad   INT NOT NULL,
@@ -45,7 +56,7 @@ CREATE TABLE PagoAsociado (
     importe          DECIMAL(10,2) NOT NULL CHECK (importe > 0),
     -- Foreign keys
     FOREIGN KEY (id_unidad) REFERENCES UnidadFuncional(id_unidad),
-    FOREIGN KEY (cbu/cvu)   REFERENCES Persona(tipo_cuenta)
+    FOREIGN KEY (cbu_cvu)   REFERENCES Persona(cbu_cvu)
 )
 GO
 
@@ -78,7 +89,7 @@ CREATE TABLE GastoOrdinario (
 	id_consorcio INT NOT NULL,
 	tipo_gasto VARCHAR(60),
 	fecha DATE CHECK (YEAR(fecha) > 1958 AND YEAR(fecha) <= YEAR(SYSDATETIME())),
-	importe DECIMAL(10,2) NOT NULL,
+	importe DECIMAL(10,2) NOT NULL CHECK (importe > 0),
 	nro_factura INT NOT NULL,
 	id_proveedor INT NOT NULL,
 	descripcion VARCHAR(60),
@@ -111,17 +122,6 @@ CREATE TABLE PersonaUnidad
     fecha_fin DATE NOT NULL,
     CONSTRAINT FK_PersonaUnidad_Unidad FOREIGN KEY (id_unidad) REFERENCES UnidadFuncional(id_unidad_funcional),
     CONSTRAINT FK_PersonaUnidad_Persona FOREIGN KEY (dni) REFERENCES Persona(dni)
-)
-GO
-
-CREATE TABLE Persona
-(
-    dni INT PRIMARY KEY,
-    nombre NVARCHAR(50),
-    apellido NVARCHAR(50),
-    mail NVARCHAR(254),
-    telefono VARCHAR(20),
-    cbu_cvu VARCHAR(25)
 )
 GO
 
