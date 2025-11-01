@@ -27,14 +27,14 @@ GO
 
 USE Com5600G15
 GO
--- *************** CREACIÓN DE SCHEMAS *************** --
+-- *************** CREACIÃ“N DE SCHEMAS *************** --
 
 DROP SCHEMA IF EXISTS Importacion;
 GO
 CREATE SCHEMA Importacion;
 GO
 
--- *************** CREACIÓN DE TABLAS *************** --
+-- *************** CREACIÃ“N DE TABLAS *************** --
 
 CREATE TABLE PagoAsociado (
     id_expensa       INT IDENTITY(1,1) PRIMARY KEY,
@@ -52,11 +52,11 @@ GO
 
 CREATE TABLE GastoExtraordinario (
     id_gasto        INT IDENTITY(1,1) PRIMARY KEY,
-    id_consorcio    INT NOT NULL, -- FK a agregar después
+    id_consorcio    INT NOT NULL, -- FK a agregar despuÃ©s
     detalle         VARCHAR(255) NOT NULL,
     importe         DECIMAL(10,2) NOT NULL CHECK (importe > 0),
     fecha           DATE NOT NULL,
-    pago_cuotas     BIT NOT NULL DEFAULT 0,  -- 0 = no, 1 = sí
+    pago_cuotas     BIT NOT NULL DEFAULT 0,  -- 0 = no, 1 = sÃ­
     nro_cuota       INT NULL,
     total_cuotas    INT NULL,
     
