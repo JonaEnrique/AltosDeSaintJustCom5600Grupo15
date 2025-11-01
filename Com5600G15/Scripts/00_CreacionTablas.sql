@@ -125,3 +125,16 @@ CREATE TABLE PersonaUnidad
 )
 GO
 
+CREATE TABLE Consorcio
+(
+	id_consorcio INT IDENTITY(1,1) PRIMARY KEY,
+	nombre VARCHAR(50),
+	direccion VARCHAR(20),
+	cant_unidades_funcionales INT NOT NULL,
+	m2_totales DECIMAL(10,2) NOT NULL,
+	vencimiento1 DATE NOT NULL,
+	vencimiento2 DATETIME NOT NULL
+)
+GO
+
+
