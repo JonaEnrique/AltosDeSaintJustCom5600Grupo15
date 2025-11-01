@@ -50,7 +50,7 @@ BEGIN
         EXEC sp_executesql @SQL;
 
         -- Insertar los datos nuevos en UnidadFuncional
-        INSERT INTO dbo.UnidadFuncional (
+        INSERT INTO Consorcio.UnidadFuncional (
             id_consorcio,
             nombre_consorcio,
             nroUnidadFuncional,
