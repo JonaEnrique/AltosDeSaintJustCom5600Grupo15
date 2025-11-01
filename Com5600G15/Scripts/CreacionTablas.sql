@@ -27,8 +27,12 @@ GO
 
 USE Com5600G15
 GO
-
 -- *************** CREACIÓN DE SCHEMAS *************** --
+
+DROP SCHEMA IF EXISTS Importacion;
+GO
+CREATE SCHEMA Importacion;
+GO
 
 -- *************** CREACIÓN DE TABLAS *************** --
 
@@ -46,7 +50,7 @@ CREATE TABLE PagoAsociado (
 )
 GO
 
-CREATE TABLE GastoExtraordinarios (
+CREATE TABLE GastoExtraordinario (
     id_gasto        INT IDENTITY(1,1) PRIMARY KEY,
     id_consorcio    INT NOT NULL, -- FK a agregar después
     detalle         VARCHAR(255) NOT NULL,

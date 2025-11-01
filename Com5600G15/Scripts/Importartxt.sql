@@ -1,52 +1,8 @@
-﻿CREATE DATABASE Com5600G15
-
-USE Com5600G15
-GO
-
--- Tabla de consorcios
-IF OBJECT_ID('dbo.Consorcio', 'U') IS NOT NULL DROP TABLE dbo.Consorcio;
-GO
-
-CREATE TABLE dbo.Consorcio (
-    id_consorcio     INT IDENTITY(1,1) PRIMARY KEY,
-    nombre           NVARCHAR(100) NOT NULL UNIQUE,
-    direccion        NVARCHAR(150) NULL,
-    m2_totales       DECIMAL(10,2) NULL,
-    vencimiento1     DATE NULL,
-    vencimiento2     DATE NULL
-);
-GO
-
--- Tabla de unidades funcionales
-IF OBJECT_ID('dbo.UnidadFuncional', 'U') IS NOT NULL DROP TABLE dbo.UnidadFuncional;
-GO
-
-CREATE TABLE dbo.UnidadFuncional (
-    id_unidad_funcional INT IDENTITY(1,1) PRIMARY KEY,
-    id_consorcio        INT NOT NULL,
-	nombre_consorcio NVARCHAR(100) NULL,
-    nroUnidadFuncional  INT NOT NULL,
-    piso                NVARCHAR(10) NULL,
-    departamento        NVARCHAR(10) NULL,
-    coeficiente         DECIMAL(10,4) NULL,
-    m2_unidad_funcional DECIMAL(10,2) NULL,
-    bauleras            INT NULL,
-    cochera             INT NULL,
-    m2_baulera          DECIMAL(10,2) NULL,
-    m2_cochera          DECIMAL(10,2) NULL,
-    FOREIGN KEY (id_consorcio) REFERENCES dbo.Consorcio(id_consorcio)
-);
+﻿USE Com5600G15
 GO
 
 --------------------------------------------------------------------------------
--- 2️⃣ CREACIÓN DEL ESQUEMA IMPORTACION (si no existe)
---------------------------------------------------------------------------------
-IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'Importacion')
-    EXEC('CREATE SCHEMA Importacion');
-GO
-
---------------------------------------------------------------------------------
--- 3️⃣ STORED PROCEDURE: Importacion.CargarUnidadFuncional
+--STORED PROCEDURE: Importacion.CargarUnidadFuncional
 --------------------------------------------------------------------------------
 CREATE OR ALTER PROCEDURE Importacion.CargarUnidadFuncional
     @RutaArchivo NVARCHAR(260)
@@ -147,21 +103,3 @@ BEGIN
     END CATCH
 END;
 GO
---------------------------------------------------------------------------------
--- 4️⃣ EJEMPLO DE EJECUCIÓN
---------------------------------------------------------------------------------
-
-INSERT INTO dbo.Consorcio (nombre, direccion, m2_totales, vencimiento1, vencimiento2)
-VALUES 
-    ('Azcuenaga', NULL, NULL, NULL, NULL),
-    ('Alzaga', NULL, NULL, NULL, NULL),
-    ('Alberdi', NULL, NULL, NULL, NULL),
-    ('Unzue', NULL, NULL, NULL, NULL),
-    ('Pereyra Iraola', NULL, NULL, NULL, NULL);
-
--- Verificar que se insertaron
-SELECT * FROM dbo.Consorcio;
-
--- Luego ejecutá el SP con la ruta del archivo:
-EXEC Importacion.CargarUnidadFuncional
-    @RutaArchivo = 'C:\Users\User\Downloads\Archivos\Archivos\UFporconsorcio.txt';
