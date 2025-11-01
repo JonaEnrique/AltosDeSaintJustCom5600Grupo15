@@ -83,7 +83,7 @@ CREATE TABLE Consorcio.Persona(
     apellido NVARCHAR(50) NOT NULL,
     mail     NVARCHAR(254),
     telefono VARCHAR(20),
-    cbu_cvu  VARCHAR(25)
+    cbu_cvu  VARCHAR(25) UNIQUE
 );
 
 CREATE TABLE Consorcio.Proveedor(
