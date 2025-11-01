@@ -103,8 +103,4 @@ CREATE TABLE EstadoFinanciero (
 	CONSTRAINT fk_estadoFinanciero_consorcio FOREIGN KEY (id_consorcio) REFERENCES Consorcio(id_consorcio)
 );
 
-<<<<<<< HEAD
-=======
 
-
->>>>>>> integraciones
