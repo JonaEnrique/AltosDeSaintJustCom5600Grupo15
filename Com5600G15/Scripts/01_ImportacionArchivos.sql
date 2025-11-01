@@ -116,10 +116,7 @@ BEGIN
             RAISERROR('La ruta del archivo no puede estar vacía', 16, 1);
             RETURN;
         END
-
-    DECLARE @sql NVARCHAR(MAX);
-
-    SET @sql = N'
+            
     CREATE TABLE ##Consorcios (
         id NVARCHAR(50),
         nombre_consorcio NVARCHAR(100),
@@ -133,6 +130,9 @@ BEGIN
         servicio_luz DECIMAL(18,2)
     );
 
+    DECLARE @sql NVARCHAR(MAX);
+
+    SET @sql = N'
     INSERT INTO ##Consorcios
     (id, nombre_consorcio, mes, bancarios, limpieza, administracion, seguros, gastos_generales, servicios_agua, servicio_luz)
     SELECT 
