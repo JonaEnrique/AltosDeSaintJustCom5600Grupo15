@@ -98,6 +98,51 @@ Reporte.sp_reporte_flujo_caja_semanal_XML
      @id_consorcio = 1,
      @fecha_desde = '2024-01-01',
      @fecha_hasta = '2024-12-31';
+--------------------------------------------------------------------------------
+--REPORTE 2
+--------------------------------------------------------------------------------
+
+CREATE OR ALTER PROCEDURE Reporte.sp_reporte_recaudacion_mes_depto
+    @id_consorcio INT,
+    @fecha_desde DATE,
+    @fecha_hasta DATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    ;WITH Datos AS (
+        SELECT 
+            MONTH(p.fecha) AS MesNumero,
+            FORMAT(p.fecha,'MMMM yyyy','es-es') AS Mes, --Notita mental, format para que de los meses en español
+            u.departamento AS Departamento,
+            p.importe
+        FROM Pago.PagoAsociado p
+        INNER JOIN Consorcio.UnidadFuncional u
+            ON p.id_unidad = u.id_unidad
+        WHERE u.id_consorcio = @id_consorcio
+          AND p.fecha BETWEEN @fecha_desde AND @fecha_hasta
+    )
+    SELECT 
+        Mes,
+        ISNULL([A],0) AS [A],
+        ISNULL([B],0) AS [B],
+        ISNULL([C],0) AS [C],
+        ISNULL([D],0) AS [D],
+        ISNULL([E],0) AS [E]
+    FROM Datos
+    PIVOT (
+        SUM(importe) FOR Departamento IN ([A],[B],[C],[D],[E])
+    ) AS TablaCruzada
+    ORDER BY MesNumero;
+END;
+GO
+
+
+-- Ejemplo de ejecución
+EXEC Reporte.sp_reporte_recaudacion_mes_depto
+     @id_consorcio = 1,
+     @fecha_desde = '2024-01-01',
+     @fecha_hasta = '2024-12-31';
 
 --------------------------------------------------------------------------------
 --REPORTE 4
