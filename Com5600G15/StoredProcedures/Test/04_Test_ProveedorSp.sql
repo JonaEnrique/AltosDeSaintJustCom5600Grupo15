@@ -1,6 +1,6 @@
 /*
     ---------------------------------------------------------------------
-    -Fecha: 02/11/2025
+    -Fecha: 21/11/2025
     -Grupo: 15
     -Materia: Bases de Datos Aplicada
     - Integrantes:
@@ -8,7 +8,7 @@
     - Ariel De Brito
     - Franco Perez
     - Cristian Vergara
-    -Script: PRUEBAS Stored Procedures de Proveedor
+    -Script: PRUEBAS Stored Procedures de modificacion de tablas
     ---------------------------------------------------------------------
 */
 USE Com5600G15
