@@ -197,7 +197,6 @@ BEGIN
 
         DECLARE @sql NVARCHAR(MAX);
 
-        -- Usar BULK INSERT porque PARSER_VERSION puede no estar disponible en esta instancia
         SET @sql = N'
         BULK INSERT #TmpInquilinoPropietariosDatos
         FROM ''' + @RutaArchivo + '''
@@ -210,7 +209,6 @@ BEGIN
 
         EXEC sp_executesql @sql;
 
-        -- Normalizar espacios en blanco
         UPDATE #TmpInquilinoPropietariosDatos
         SET Nombre = LTRIM(RTRIM(Nombre)),
             Apellido = LTRIM(RTRIM(Apellido)),
@@ -273,7 +271,6 @@ BEGIN
 
         EXEC sp_executesql @sql;
 
-        -- Normalizar espacios en blanco
         UPDATE #TmpInquilinoPropietariosUF
         SET CVU_CBU = LTRIM(RTRIM(CVU_CBU)),
             NombreConsorcio = LTRIM(RTRIM(NombreConsorcio)),
