@@ -169,9 +169,11 @@ BEGIN
 END;
 GO
 
-<<<<<<< HEAD
-IF OBJECT_ID('Importacion.ImportConsorciosProveedores', 'P') IS NOT NULL
-    DROP PROCEDURE Importacion.ImportConsorciosProveedores;
+--------------------------------------------------------------------------------
+--STORED PROCEDURE: Importacion.ImportarConsorciosProveedores
+--------------------------------------------------------------------------------
+IF OBJECT_ID('Importacion.ImportarConsorciosProveedores', 'P') IS NOT NULL
+    DROP PROCEDURE Importacion.ImportarConsorciosProveedores;
 GO
 
 CREATE PROCEDURE Importacion.ImportarConsorciosProveedores
@@ -285,7 +287,6 @@ BEGIN
 		DECLARE @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE();
 		THROW;  
 	END CATCH;
-=======
 --------------------------------------------------------------------------------
 -- STORED PROCEDURE: Importacion.CargarInquilinoPropietariosDatos
 --------------------------------------------------------------------------------
