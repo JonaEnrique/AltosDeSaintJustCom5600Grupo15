@@ -168,3 +168,126 @@ BEGIN
     EXEC sp_executesql @sql;
 END;
 GO
+
+--------------------------------------------------------------------------------
+-- STORED PROCEDURE: Importacion.CargarInquilinoPropietariosDatos
+--------------------------------------------------------------------------------
+CREATE OR ALTER PROCEDURE Importacion.CargarInquilinoPropietariosDatos
+    @RutaArchivo NVARCHAR(4000)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @RutaArchivo IS NULL OR LTRIM(RTRIM(@RutaArchivo)) = ''
+    BEGIN
+        RAISERROR('La ruta del archivo no puede estar vacía', 16, 1);
+        RETURN;
+    END
+
+    BEGIN TRY
+        CREATE TABLE #TmpInquilinoPropietariosDatos (
+            Nombre NVARCHAR(200),
+            Apellido NVARCHAR(200),
+            DNI NVARCHAR(50),
+            EmailPersonal NVARCHAR(200),
+            TelefonoContacto NVARCHAR(50),
+            CVU_CBU NVARCHAR(50),
+            Inquilino NVARCHAR(10)
+        );
+
+        DECLARE @sql NVARCHAR(MAX);
+
+        SET @sql = N'
+        BULK INSERT #TmpInquilinoPropietariosDatos
+        FROM ''' + @RutaArchivo + '''
+        WITH (
+            FIRSTROW = 2,
+            FIELDTERMINATOR = '';'',
+            ROWTERMINATOR = ''\n'',
+            CODEPAGE = ''ACP''
+        );';
+
+        EXEC sp_executesql @sql;
+
+        UPDATE #TmpInquilinoPropietariosDatos
+        SET Nombre = LTRIM(RTRIM(Nombre)),
+            Apellido = LTRIM(RTRIM(Apellido)),
+            DNI = LTRIM(RTRIM(DNI)),
+            EmailPersonal = LTRIM(RTRIM(EmailPersonal)),
+            TelefonoContacto = LTRIM(RTRIM(TelefonoContacto)),
+            CVU_CBU = LTRIM(RTRIM(CVU_CBU)),
+            Inquilino = LTRIM(RTRIM(Inquilino));
+
+        DECLARE @FilasImportadas INT;
+        SELECT @FilasImportadas = COUNT(*) FROM #TmpInquilinoPropietariosDatos;
+
+        PRINT 'Importación completada (datos): ' + CAST(@FilasImportadas AS NVARCHAR(10)) + ' registros insertados en #TmpInquilinoPropietariosDatos.';
+    END TRY
+    BEGIN CATCH
+        IF OBJECT_ID('tempdb..#TmpInquilinoPropietariosDatos') IS NOT NULL
+            DROP TABLE #TmpInquilinoPropietariosDatos;
+
+        DECLARE @ErrorMensaje NVARCHAR(4000) = ERROR_MESSAGE();
+        RAISERROR('error en Importacion.CargarInquilinoPropietariosDatos: %s', 16, 1, @ErrorMensaje);
+    END CATCH
+END;
+GO
+
+--------------------------------------------------------------------------------
+-- STORED PROCEDURE: Importacion.CargarInquilinoPropietariosUF
+--------------------------------------------------------------------------------
+CREATE OR ALTER PROCEDURE Importacion.CargarInquilinoPropietariosUF
+    @RutaArchivo NVARCHAR(4000)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @RutaArchivo IS NULL OR LTRIM(RTRIM(@RutaArchivo)) = ''
+    BEGIN
+        RAISERROR('La ruta del archivo no puede estar vacía', 16, 1);
+        RETURN;
+    END
+
+    BEGIN TRY
+        CREATE TABLE #TmpInquilinoPropietariosUF (
+            CVU_CBU NVARCHAR(50),
+            NombreConsorcio NVARCHAR(200),
+            nroUnidadFuncional NVARCHAR(50),
+            piso NVARCHAR(50),
+            departamento NVARCHAR(50)
+        );
+
+        DECLARE @sql NVARCHAR(MAX);
+
+        SET @sql = N'
+        BULK INSERT #TmpInquilinoPropietariosUF
+        FROM ''' + @RutaArchivo + '''
+        WITH (
+            FIRSTROW = 2,
+            FIELDTERMINATOR = ''|'',
+            ROWTERMINATOR = ''\n'',
+            CODEPAGE = ''ACP''
+        );';
+
+        EXEC sp_executesql @sql;
+
+        UPDATE #TmpInquilinoPropietariosUF
+        SET CVU_CBU = LTRIM(RTRIM(CVU_CBU)),
+            NombreConsorcio = LTRIM(RTRIM(NombreConsorcio)),
+            nroUnidadFuncional = LTRIM(RTRIM(nroUnidadFuncional)),
+            piso = LTRIM(RTRIM(piso)),
+            departamento = LTRIM(RTRIM(departamento));
+
+        DECLARE @FilasImportadas INT;
+        SELECT @FilasImportadas = COUNT(*) FROM #TmpInquilinoPropietariosUF;
+        PRINT 'Importación completada (UF): ' + CAST(@FilasImportadas AS NVARCHAR(10)) + ' registros insertados en #TmpInquilinoPropietariosUF.';
+    END TRY
+    BEGIN CATCH
+        IF OBJECT_ID('tempdb..#TmpInquilinoPropietariosUF') IS NOT NULL
+            DROP TABLE #TmpInquilinoPropietariosUF;
+
+        DECLARE @ErrorMensaje NVARCHAR(4000) = ERROR_MESSAGE();
+        RAISERROR('error en Importacion.CargarInquilinoPropietariosUF: %s', 16, 1, @ErrorMensaje);
+	END CATCH
+END;
+GO
