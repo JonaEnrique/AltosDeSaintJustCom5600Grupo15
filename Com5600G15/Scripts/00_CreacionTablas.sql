@@ -40,16 +40,16 @@ IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Persona')    EXEC('CREATE S
 
 -- *************** CREACIÃN DE TABLAS *************** --
 
-IF OBJECT_ID('Consorcio.Consorcio','U')        IS NOT NULL DROP TABLE Consorcio.Consorcio;
-IF OBJECT_ID('Consorcio.UnidadFuncional','U')  IS NOT NULL DROP TABLE Consorcio.UnidadFuncional;
-IF OBJECT_ID('Consorcio.Persona','U')          IS NOT NULL DROP TABLE Consorcio.Persona;
-IF OBJECT_ID('Pago.Prorrateo','U')            IS NOT NULL DROP TABLE Pago.Prorrateo;
+IF OBJECT_ID('Consorcio.PersonaUnidad','U')    IS NOT NULL DROP TABLE Consorcio.PersonaUnidad;
 IF OBJECT_ID('Pago.PagoAsociado','U')          IS NOT NULL DROP TABLE Pago.PagoAsociado;
+IF OBJECT_ID('Pago.Prorrateo','U')            IS NOT NULL DROP TABLE Pago.Prorrateo;
+IF OBJECT_ID('Consorcio.Persona','U')          IS NOT NULL DROP TABLE Consorcio.Persona;
+IF OBJECT_ID('Consorcio.UnidadFuncional','U')  IS NOT NULL DROP TABLE Consorcio.UnidadFuncional;
 IF OBJECT_ID('Pago.GastoOrdinario','U')        IS NOT NULL DROP TABLE Pago.GastoOrdinario;
 IF OBJECT_ID('Pago.GastoExtraordinario','U')   IS NOT NULL DROP TABLE Pago.GastoExtraordinario;
-IF OBJECT_ID('Consorcio.PersonaUnidad','U')    IS NOT NULL DROP TABLE Consorcio.PersonaUnidad;
 IF OBJECT_ID('Consorcio.EstadoFinanciero','U') IS NOT NULL DROP TABLE Consorcio.EstadoFinanciero;
 IF OBJECT_ID('Consorcio.Proveedor','U')        IS NOT NULL DROP TABLE Consorcio.Proveedor;
+IF OBJECT_ID('Consorcio.Consorcio','U')        IS NOT NULL DROP TABLE Consorcio.Consorcio;
 
 
 CREATE TABLE Consorcio.Consorcio(
