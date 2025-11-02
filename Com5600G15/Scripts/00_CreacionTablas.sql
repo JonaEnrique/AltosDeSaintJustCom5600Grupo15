@@ -28,7 +28,7 @@ GO
 USE Com5600G15
 GO
 	
--- *************** CREACIÓN DE SCHEMAS *************** --
+-- *************** CREACIÃN DE SCHEMAS *************** --
 
 IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Consorcio')  EXEC('CREATE SCHEMA Consorcio');
 IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Pago')       EXEC('CREATE SCHEMA Pago');
@@ -38,7 +38,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Importacion')EXEC('CREATE S
 IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Persona')    EXEC('CREATE SCHEMA Persona');
 
 
--- *************** CREACIÓN DE TABLAS *************** --
+-- *************** CREACIÃN DE TABLAS *************** --
 
 IF OBJECT_ID('Consorcio.Consorcio','U')        IS NOT NULL DROP TABLE Consorcio.Consorcio;
 IF OBJECT_ID('Consorcio.UnidadFuncional','U')  IS NOT NULL DROP TABLE Consorcio.UnidadFuncional;
