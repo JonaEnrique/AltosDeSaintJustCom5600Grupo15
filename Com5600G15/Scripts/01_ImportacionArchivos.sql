@@ -173,8 +173,7 @@ GO
 -- STORED PROCEDURE: Importacion.CargarInquilinoPropietariosDatos
 --------------------------------------------------------------------------------
 CREATE OR ALTER PROCEDURE Importacion.CargarInquilinoPropietariosDatos
-    @RutaArchivo NVARCHAR(4000),
-    @Persistir BIT = 0 -- 0 = cargar solo en tabla temporal, 1 = además insertar en Staging
+    @RutaArchivo NVARCHAR(4000)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -225,43 +224,6 @@ BEGIN
         SELECT @FilasImportadas = COUNT(*) FROM #TmpInquilinoPropietariosDatos;
 
         PRINT 'Importación completada (datos): ' + CAST(@FilasImportadas AS NVARCHAR(10)) + ' registros insertados en #TmpInquilinoPropietariosDatos.';
-
-        IF @Persistir = 1
-        BEGIN
-            -- Asegurar esquema y tabla Staging
-            IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'Staging')
-                EXEC('CREATE SCHEMA Staging');
-
-            IF OBJECT_ID('Staging.InquilinoPropietariosDatos','U') IS NULL
-            BEGIN
-                CREATE TABLE Staging.InquilinoPropietariosDatos (
-                    Nombre NVARCHAR(200),
-                    Apellido NVARCHAR(200),
-                    DNI NVARCHAR(50),
-                    EmailPersonal NVARCHAR(200),
-                    TelefonoContacto NVARCHAR(50),
-                    CVU_CBU NVARCHAR(50),
-                    Inquilino NVARCHAR(10),
-                    FechaCarga DATETIME DEFAULT (GETDATE())
-                );
-            END
-
-            BEGIN TRANSACTION;
-            BEGIN TRY
-                INSERT INTO Staging.InquilinoPropietariosDatos (Nombre, Apellido, DNI, EmailPersonal, TelefonoContacto, CVU_CBU, Inquilino)
-                SELECT Nombre, Apellido, DNI, EmailPersonal, TelefonoContacto, CVU_CBU, Inquilino
-                FROM #TmpInquilinoPropietariosDatos;
-
-                DECLARE @FilasPersistidas INT = @@ROWCOUNT;
-                COMMIT TRANSACTION;
-                PRINT 'Persistido en Staging.InquilinoPropietariosDatos: ' + CAST(@FilasPersistidas AS NVARCHAR(10)) + ' registros.';
-            END TRY
-            BEGIN CATCH
-                IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
-                DECLARE @Err NVARCHAR(4000) = ERROR_MESSAGE();
-                RAISERROR('Error al persistir InquilinoPropietariosDatos: %s',16,1,@Err);
-            END CATCH
-        END
     END TRY
     BEGIN CATCH
         IF OBJECT_ID('tempdb..#TmpInquilinoPropietariosDatos') IS NOT NULL
@@ -270,8 +232,6 @@ BEGIN
         DECLARE @ErrorMensaje NVARCHAR(4000) = ERROR_MESSAGE();
         RAISERROR('error en Importacion.CargarInquilinoPropietariosDatos: %s', 16, 1, @ErrorMensaje);
     END CATCH
-
-	SELECT * FROM #TmpInquilinoPropietariosDatos;
 END;
 GO
 
@@ -279,8 +239,7 @@ GO
 -- STORED PROCEDURE: Importacion.CargarInquilinoPropietariosUF
 --------------------------------------------------------------------------------
 CREATE OR ALTER PROCEDURE Importacion.CargarInquilinoPropietariosUF
-    @RutaArchivo NVARCHAR(4000),
-    @Persistir BIT = 0 -- 0 = solo temporal, 1 = además insertar en Staging
+    @RutaArchivo NVARCHAR(4000)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -325,41 +284,6 @@ BEGIN
         DECLARE @FilasImportadas INT;
         SELECT @FilasImportadas = COUNT(*) FROM #TmpInquilinoPropietariosUF;
         PRINT 'Importación completada (UF): ' + CAST(@FilasImportadas AS NVARCHAR(10)) + ' registros insertados en #TmpInquilinoPropietariosUF.';
-
-        IF @Persistir = 1
-        BEGIN
-            IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'Staging')
-                EXEC('CREATE SCHEMA Staging');
-
-            IF OBJECT_ID('Staging.InquilinoPropietariosUF','U') IS NULL
-            BEGIN
-                CREATE TABLE Staging.InquilinoPropietariosUF (
-                    CVU_CBU NVARCHAR(50),
-                    NombreConsorcio NVARCHAR(200),
-                    nroUnidadFuncional NVARCHAR(50),
-                    piso NVARCHAR(50),
-                    departamento NVARCHAR(50),
-                    FechaCarga DATETIME DEFAULT (GETDATE())
-                );
-            END
-
-            BEGIN TRANSACTION;
-            BEGIN TRY
-                INSERT INTO Staging.InquilinoPropietariosUF (CVU_CBU, NombreConsorcio, nroUnidadFuncional, piso, departamento)
-                SELECT CVU_CBU, NombreConsorcio, nroUnidadFuncional, piso, departamento
-                FROM #TmpInquilinoPropietariosUF;
-
-                DECLARE @FilasPersistidas INT = @@ROWCOUNT;
-                COMMIT TRANSACTION;
-                PRINT 'Persistido en Staging.InquilinoPropietariosUF: ' + CAST(@FilasPersistidas AS NVARCHAR(10)) + ' registros.';
-            END TRY
-            BEGIN CATCH
-                IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
-                DECLARE @Err NVARCHAR(4000) = ERROR_MESSAGE();
-                RAISERROR('Error al persistir InquilinoPropietariosUF: %s',16,1,@Err);
-            END CATCH
-        END
-
     END TRY
     BEGIN CATCH
         IF OBJECT_ID('tempdb..#TmpInquilinoPropietariosUF') IS NOT NULL
@@ -367,106 +291,6 @@ BEGIN
 
         DECLARE @ErrorMensaje NVARCHAR(4000) = ERROR_MESSAGE();
         RAISERROR('error en Importacion.CargarInquilinoPropietariosUF: %s', 16, 1, @ErrorMensaje);
-    END CATCH
-
-	SELECT * FROM #TmpInquilinoPropietariosUF;
-END;
-GO
-
---------------------------------------------------------------------------------
--- STORED PROCEDURE: Importacion.CargarPagosConsorciosAStaging
---------------------------------------------------------------------------------
-CREATE OR ALTER PROCEDURE Importacion.CargarPagosConsorciosAStaging
-    @RutaArchivo NVARCHAR(4096)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    IF @RutaArchivo IS NULL OR LTRIM(RTRIM(@RutaArchivo)) = ''
-    BEGIN
-        RAISERROR('La ruta del archivo no puede estar vacía', 16, 1);
-        RETURN;
-    END
-
-    BEGIN TRY
-        CREATE TABLE #TmpPagosConsorcios (
-            IdPago NVARCHAR(50),
-            FechaRaw NVARCHAR(50),
-            CVU_CBU NVARCHAR(50),
-            ValorRaw NVARCHAR(100),
-            ValorDecimal DECIMAL(18,3) NULL,
-            Fecha DATE NULL
-        );
-
-        DECLARE @sql NVARCHAR(MAX);
-
-        SET @sql = N'
-        BULK INSERT #TmpPagosConsorcios
-        FROM ''' + @RutaArchivo + '''
-        WITH (
-            FIRSTROW = 2,
-            FIELDTERMINATOR = '','',
-            ROWTERMINATOR = ''\n'',
-            CODEPAGE = ''ACP''
-        );';
-
-        EXEC sp_executesql @sql;
-
-        -- Normalizar y convertir valores
-        UPDATE #TmpPagosConsorcios
-        SET ValorRaw = LTRIM(RTRIM(ValorRaw)),
-            ValorRaw = REPLACE(ValorRaw, '$', ''),
-            ValorRaw = REPLACE(ValorRaw, ' ', ''),
-            ValorDecimal = TRY_CAST(REPLACE(ValorRaw, ',', '.') AS DECIMAL(18,3)),
-            Fecha = TRY_CONVERT(DATE, LTRIM(RTRIM(FechaRaw)), 103);
-
-        DECLARE @FilasImportadas INT;
-        SELECT @FilasImportadas = COUNT(*) FROM #TmpPagosConsorcios;
-
-        PRINT 'Importación completada (pagos->temp): ' + CAST(@FilasImportadas AS NVARCHAR(10)) + ' registros insertados en #TmpPagosConsorcios.';
-
-        -- Asegurar esquema y tabla Staging
-        IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'Staging')
-            EXEC('CREATE SCHEMA Staging');
-
-        IF OBJECT_ID('Staging.PagosConsorcios','U') IS NULL
-        BEGIN
-            CREATE TABLE Staging.PagosConsorcios (
-                IdPago NVARCHAR(50),
-                FechaRaw NVARCHAR(50),
-                CVU_CBU NVARCHAR(50),
-                ValorRaw NVARCHAR(100),
-                ValorDecimal DECIMAL(18,3) NULL,
-                Fecha DATE NULL,
-                FechaCarga DATETIME DEFAULT (GETDATE())
-            );
-        END
-
-        BEGIN TRANSACTION;
-        BEGIN TRY
-            INSERT INTO Staging.PagosConsorcios (IdPago, FechaRaw, CVU_CBU, ValorRaw, ValorDecimal, Fecha)
-            SELECT IdPago, FechaRaw, CVU_CBU, ValorRaw, ValorDecimal, Fecha
-            FROM #TmpPagosConsorcios;
-
-            DECLARE @FilasPersistidas INT = @@ROWCOUNT;
-            COMMIT TRANSACTION;
-            PRINT 'Persistido en Staging.PagosConsorcios: ' + CAST(@FilasPersistidas AS NVARCHAR(10)) + ' registros.';
-        END TRY
-        BEGIN CATCH
-            IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
-            DECLARE @Err NVARCHAR(4000) = ERROR_MESSAGE();
-            RAISERROR('Error al persistir PagosConsorcios: %s',16,1,@Err);
-        END CATCH
-
-        SELECT * FROM #TmpPagosConsorcios;
-
-    END TRY
-    BEGIN CATCH
-        IF OBJECT_ID('tempdb..#TmpPagosConsorcios') IS NOT NULL
-            DROP TABLE #TmpPagosConsorcios;
-
-        DECLARE @ErrorMensaje NVARCHAR(4000) = ERROR_MESSAGE();
-        RAISERROR('error en Importacion.CargarPagosConsorciosAStaging: %s', 16, 1, @ErrorMensaje);
-    END CATCH
+	END CATCH
 END;
 GO
