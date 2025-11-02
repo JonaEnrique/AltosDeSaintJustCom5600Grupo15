@@ -287,6 +287,7 @@ BEGIN
 		DECLARE @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE();
 		THROW;  
 	END CATCH;
+END
 --------------------------------------------------------------------------------
 -- STORED PROCEDURE: Importacion.CargarInquilinoPropietariosDatos
 --------------------------------------------------------------------------------
