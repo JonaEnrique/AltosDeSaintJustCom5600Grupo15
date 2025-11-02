@@ -27,55 +27,112 @@ CREATE PROCEDURE dbo.ImportConsorciosProveedores
     @ExcelPath NVARCHAR(255)
 AS
 BEGIN
-    SET NOCOUNT ON;
+	SET NOCOUNT ON;
+	DECLARE @prevShowAdvanced INT,
+			@prevAdHoc INT;
 
-    -- Enable Ad Hoc Queries if not already
-    EXEC sp_configure 'show advanced options', 1;
-    RECONFIGURE;
-    EXEC sp_configure 'Ad Hoc Distributed Queries', 1;
-    RECONFIGURE;
+		-- Guarda valores de configracion actual
+		SELECT @prevShowAdvanced = CONVERT(INT, value_in_use)
+		FROM sys.configurations 
+		WHERE name = 'show advanced options';
 
-    -- Temporary staging tables
-    CREATE TABLE #TempConsorcios (
-        F1 NVARCHAR(100),  -- nombre
-        F2 NVARCHAR(200),  -- direccion
-        F3 INT,            -- cant_uf
-        F4 DECIMAL(10,2)   -- m2_totales
-    );
+		SELECT @prevAdHoc = CONVERT(INT, value_in_use)
+		FROM sys.configurations 
+		WHERE name = 'Ad Hoc Distributed Queries';
 
-    CREATE TABLE #TempProveedores (
-        F1 NVARCHAR(50),   -- tipo
-        F2 NVARCHAR(50),   -- nombre_proveedor
-        F3 NVARCHAR(50),   -- cuenta
-        F4 NVARCHAR(100)   -- nombre consorcio (to resolve id_consorcio)
-    );
+		IF @prevShowAdvanced = 0
+		BEGIN
+			EXEC sp_configure 'show advanced options', 1;
+			RECONFIGURE;
+		END
 
-    -- Import Consorcios
-    DECLARE @SQL NVARCHAR(MAX);
-    SET @SQL = N'INSERT INTO #TempConsorcios
-                 SELECT * FROM OPENROWSET(''Microsoft.ACE.OLEDB.12.0'',
-                 ''Excel 12.0 Xml;HDR=YES;Database=' + @ExcelPath + ''',
-                 ''SELECT * FROM [Consorcios$]'')';
-    EXEC sp_executesql @SQL;
+		IF @prevAdHoc = 0
+		BEGIN
+			EXEC sp_configure 'Ad Hoc Distributed Queries', 1;
+			RECONFIGURE;
+		END
 
-    -- Import Proveedores
-    SET @SQL = N'INSERT INTO #TempProveedores
-                 SELECT * FROM OPENROWSET(''Microsoft.ACE.OLEDB.12.0'',
-                 ''Excel 12.0 Xml;HDR=NO;Database=' + @ExcelPath + ''',
-                 ''SELECT * FROM [Proveedores$]'')';
-    EXEC sp_executesql @SQL;
+	BEGIN TRANSACTION;
 
-    -- Insert into Consorcio
-    INSERT INTO Consorcio(nombre, direccion, cant_uf, m2_totales)
-    SELECT F1, F2, F3, F4
-    FROM #TempConsorcios
-    WHERE dbo.IsAlpha(F1) = 1; -- optional validation
+	BEGIN TRY
 
-    -- Insert into Proveedor, mapping consorcio name to id_consorcio
-    INSERT INTO Proveedor(tipo, nombre_proveedor, cuenta, id_consorcio)
-    SELECT P.F1, P.F2, P.F3, C.id_consorcio
-    FROM #TempProveedores P
-    INNER JOIN Consorcio C ON C.nombre = P.F4
-    WHERE dbo.IsAlpha(P.F2) = 1; -- optional validation
+
+		CREATE TABLE #TempConsorcios (
+			nombre_consorcio NVARCHAR(200),  --(luego usar para resolver id_consorcio en proveedores)
+			direccion NVARCHAR(200), 
+			cant_unidades_funcionales INT,            
+			m2_totales DECIMAL(10,2)   
+		);
+
+		CREATE TABLE #TempProveedores (
+			tipo NVARCHAR(200),   
+			nombre_proveedor NVARCHAR(200),  
+			cuenta NVARCHAR(200),  
+			nombre_consorcio NVARCHAR(200)   --(luego usar para resolver id_consorcio)
+		);
+
+		-- Importar Consorcios
+		DECLARE @SQL NVARCHAR(1000);
+		SET @SQL = N'
+			INSERT INTO #TempConsorcios
+			SELECT 
+				CAST(F2 AS NVARCHAR(200)) AS F2,
+				CAST(F3 AS NVARCHAR(200)) AS F3,
+				CAST(F4 AS INT) AS F4,
+				CAST(F5 AS DECIMAL(10,2)) AS F5
+			FROM OPENROWSET(
+				''Microsoft.ACE.OLEDB.16.0'',
+				''Excel 12.0 Xml;HDR=NO;Database=' + @ExcelPath +N''',
+				''SELECT * FROM [Consorcios$]''
+			) AS X
+			WHERE NOT (F4 IS NULL OR F4 = '''')' ;
+
+		EXEC sp_executesql @SQL;
+
+		-- Importar Proveedores
+		SET @SQL = N'
+			INSERT INTO #TempProveedores
+			SELECT *
+			FROM OPENROWSET(
+				''Microsoft.ACE.OLEDB.16.0'',
+				''Excel 12.0 Xml;HDR=NO;Database=' + @ExcelPath +N''',
+				''SELECT * FROM [Proveedores$]''
+			) AS X
+			WHERE NOT (F1 IS NULL OR F1 = '''')' ;
+
+		EXEC sp_executesql @SQL;
+
+		-- Insertar en tabla Consorcio de la BD
+		INSERT INTO Consorcio(nombre, direccion, cant_unidades_funcionales, m2_totales, vencimiento1, vencimiento2)
+		SELECT T.nombre_consorcio, T.direccion, T.cant_unidades_funcionales, T.m2_totales, GETDATE(), GETDATE()
+		FROM #TempConsorcios T;
+
+		-- Insertar en tabla Proveedor dela BD, mapeando Consorcio
+		INSERT INTO Proveedor(id_consorcio, nombre_proveedor, cuenta, tipo)
+		SELECT C.id_consorcio, P.nombre_proveedor, P.cuenta, P.tipo
+		FROM #TempProveedores P
+		INNER JOIN Consorcio C
+			ON C.nombre = P.nombre_consorcio;  -- JOIN en el nombre del consorcio
+
+		COMMIT TRANSACTION;
+		
+		--Volvemos a la onfiguracion original
+		EXEC sp_configure 'Ad Hoc Distributed Queries', @prevAdHoc;
+		EXEC sp_configure 'show advanced options', @prevShowAdvanced;
+		RECONFIGURE;
+
+	END TRY
+	BEGIN CATCH
+		ROLLBACK TRANSACTION;
+
+		--Volvemos a la onfiguracion original
+		EXEC sp_configure 'Ad Hoc Distributed Queries', @prevAdHoc;
+		EXEC sp_configure 'show advanced options', @prevShowAdvanced;
+		RECONFIGURE;
+
+		-- Declaramos e informamos el error
+		DECLARE @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE();
+		THROW;  
+	END CATCH;
 END;
 GO
