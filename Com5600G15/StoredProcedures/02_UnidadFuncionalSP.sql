@@ -3,14 +3,12 @@
     -Fecha: 21/11/2025
     -Grupo: 15
     -Materia: Bases de Datos Aplicada
-
     - Integrantes:
     - Jonathan Enrique
-		- Ariel De Brito
-		- Franco Perez
-		- Cristian Vergara
-
-	 -Consigna:Generar los procedimientos almacenados (stored procedures) de inserción, modificación y eliminación para cada tabla.
+	- Ariel De Brito
+	- Franco Perez
+	- Cristian Vergara
+	-Consigna:Generar los procedimientos almacenados (stored procedures) de inserción, modificación y eliminación para cada tabla.
     ---------------------------------------------------------------------
 */
 USE Com5600G15
