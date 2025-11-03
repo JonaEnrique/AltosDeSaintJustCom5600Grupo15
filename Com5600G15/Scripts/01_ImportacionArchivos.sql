@@ -283,6 +283,7 @@ BEGIN
 	EXEC sp_configure 'show advanced options', @prevShowAdvanced;
 	RECONFIGURE;
 END;
+GO
 --------------------------------------------------------------------------------
 -- STORED PROCEDURE: Importacion.CargarInquilinoPropietariosDatos
 --------------------------------------------------------------------------------
