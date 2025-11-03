@@ -49,41 +49,35 @@ BEGIN
         -- Ejecutar el BULK INSERT
         EXEC sp_executesql @SQL;
 
+        select * from #TmpUnidadFuncional;
         -- Insertar los datos nuevos en UnidadFuncional
-        INSERT INTO Consorcio.UnidadFuncional (
-            id_consorcio,
-            nombre_consorcio,
-            nroUnidadFuncional,
-            piso,
-            departamento,
-            coeficiente,
-            m2_unidad_funcional,
-            bauleras,
-            cochera,
-            m2_baulera,
-            m2_cochera
-        )
-        SELECT 
-            c.id_consorcio,
-            c.nombre,
-            TRY_CAST(t.nroUnidadFuncional AS INT),
-            LTRIM(RTRIM(t.Piso)),
-            LTRIM(RTRIM(t.Departamento)),
-            TRY_CAST(REPLACE(t.Coeficiente, ',', '.') AS DECIMAL(10,4)),
-            TRY_CAST(t.m2_unidad_funcional AS DECIMAL(10,2)),
-            CASE WHEN UPPER(LTRIM(RTRIM(t.Bauleras))) = 'SI' THEN 1 ELSE 0 END,
-            CASE WHEN UPPER(LTRIM(RTRIM(t.Cochera))) = 'SI' THEN 1 ELSE 0 END,
-            TRY_CAST(t.m2_baulera AS DECIMAL(10,2)),
-            TRY_CAST(t.m2_cochera AS DECIMAL(10,2))
-        FROM #TmpUnidadFuncional t
-        INNER JOIN dbo.Consorcio c
-            ON c.nombre = LTRIM(RTRIM(t.NombreConsorcio))
-        WHERE NOT EXISTS (
-            SELECT 1 
-            FROM dbo.UnidadFuncional u
-            WHERE u.id_consorcio = c.id_consorcio
-              AND u.nroUnidadFuncional = TRY_CAST(t.nroUnidadFuncional AS INT)
-        );
+		INSERT INTO Consorcio.UnidadFuncional (
+			id_consorcio,
+			piso,
+			departamento,
+			coeficiente,
+			m2_unidad,
+			m2_baulera,
+			m2_cochera
+		)
+		SELECT 
+			c.id_consorcio,
+			LTRIM(RTRIM(t.Piso)),
+			LTRIM(RTRIM(t.Departamento)),
+			TRY_CAST(REPLACE(t.Coeficiente, ',', '.') AS DECIMAL(4,1)),
+			TRY_CAST(t.m2_unidad_funcional AS DECIMAL(10,2)),  -- from the file
+			TRY_CAST(t.m2_baulera AS DECIMAL(10,2)),
+			TRY_CAST(t.m2_cochera AS DECIMAL(10,2))
+		FROM #TmpUnidadFuncional t
+		INNER JOIN Consorcio.Consorcio c
+			ON c.nombre = LTRIM(RTRIM(t.NombreConsorcio))
+		WHERE NOT EXISTS (
+			SELECT 1 
+			FROM Consorcio.UnidadFuncional u
+			WHERE u.id_consorcio = c.id_consorcio
+			  AND u.piso = LTRIM(RTRIM(t.Piso))
+			  AND u.departamento = LTRIM(RTRIM(t.Departamento))
+		);
 
         SET @FilasImportadas = @@ROWCOUNT;
 
@@ -106,7 +100,7 @@ GO
 
 
 CREATE OR ALTER PROCEDURE Importacion.ImportarJSON 
-    @RutaArchivo NVARCHAR(MAX)
+    @RutaArchivo NVARCHAR(255)
 AS
 BEGIN
     SET NOCOUNT ON;
