@@ -106,7 +106,7 @@ GO
 
 
 CREATE OR ALTER PROCEDURE Importacion.ImportarJSON 
-    @RutaArchivo NVARCHAR(4096)
+    @RutaArchivo NVARCHAR(MAX)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -177,7 +177,7 @@ IF OBJECT_ID('Importacion.ImportarConsorciosProveedores', 'P') IS NOT NULL
 GO
 
 CREATE PROCEDURE Importacion.ImportarConsorciosProveedores
-    @ExcelPath NVARCHAR(255)
+    @RutaExcel NVARCHAR(255)
 AS
 BEGIN
 	SET NOCOUNT ON;
@@ -235,7 +235,7 @@ BEGIN
 				CAST(F5 AS DECIMAL(10,2)) AS F5
 			FROM OPENROWSET(
 				''Microsoft.ACE.OLEDB.16.0'',
-				''Excel 12.0 Xml;HDR=NO;Database=' + @ExcelPath +N''',
+				''Excel 12.0 Xml;HDR=NO;Database=' + @RutaExcel +N''',
 				''SELECT * FROM [Consorcios$]''
 			) AS X
 			WHERE NOT (F4 IS NULL OR F4 = '''')' ;
@@ -248,7 +248,7 @@ BEGIN
 			SELECT *
 			FROM OPENROWSET(
 				''Microsoft.ACE.OLEDB.16.0'',
-				''Excel 12.0 Xml;HDR=NO;Database=' + @ExcelPath +N''',
+				''Excel 12.0 Xml;HDR=NO;Database=' + @RutaExcel +N''',
 				''SELECT * FROM [Proveedores$]''
 			) AS X
 			WHERE NOT (F1 IS NULL OR F1 = '''')' ;
@@ -282,7 +282,7 @@ BEGIN
 	EXEC sp_configure 'Ad Hoc Distributed Queries', @prevAdHoc;
 	EXEC sp_configure 'show advanced options', @prevShowAdvanced;
 	RECONFIGURE;
-END
+END;
 --------------------------------------------------------------------------------
 -- STORED PROCEDURE: Importacion.CargarInquilinoPropietariosDatos
 --------------------------------------------------------------------------------
@@ -403,6 +403,5 @@ BEGIN
         DECLARE @ErrorMensaje NVARCHAR(4000) = ERROR_MESSAGE();
         RAISERROR('error en Importacion.CargarInquilinoPropietariosUF: %s', 16, 1, @ErrorMensaje);
 	END CATCH
->>>>>>> integraciones
 END;
 GO
