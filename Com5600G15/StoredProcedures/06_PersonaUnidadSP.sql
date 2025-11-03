@@ -8,7 +8,7 @@
 	- Ariel De Brito
 	- Franco Perez
 	- Cristian Vergara
- 	-Consigna:Generar los procedimientos almacenados (stored procedures) de inserciÛn, modificaciÛn y eliminaciÛn para cada tabla.
+ 	-Consigna:Generar los procedimientos almacenados (stored procedures) de inserci√≥n, modificaci√≥n y eliminaci√≥n para cada tabla.
     ---------------------------------------------------------------------
 */
 -- =============================================
@@ -93,7 +93,7 @@ BEGIN
             dni = ISNULL(@dni, dni),
             rol = ISNULL(@rol, rol),
             fecha_inicio = ISNULL(@fecha_inicio, fecha_inicio),
-            --fecha fin puede ser null porque quiz· no se ha determinado el fin del contrato
+            --fecha fin puede ser null porque quiz√° no se ha determinado el fin del contrato
             fecha_fin = @fecha_fin
         WHERE id_persona_unidad = @id_persona_unidad;
 
@@ -109,7 +109,7 @@ GO
 -- =============================================
 -- Eliminar PersonaUnidad
 -- =============================================
-CREATE OR ALTER PROCEDURE Consorcio.sp_EliminarPersonaUnidad
+CREATE OR ALTER PROCEDURE Consorcio.EliminarPersonaUnidad
     @id_persona_unidad INT
 AS
 BEGIN
@@ -130,4 +130,5 @@ BEGIN
         PRINT ERROR_MESSAGE();
     END CATCH
 END;
+
 GO
