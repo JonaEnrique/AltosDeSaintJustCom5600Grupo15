@@ -264,29 +264,24 @@ BEGIN
 		INSERT INTO Consorcio.Proveedor(id_consorcio, nombre_proveedor, cuenta, tipo)
 		SELECT C.id_consorcio, P.nombre_proveedor, P.cuenta, P.tipo
 		FROM #TempProveedores P
-		INNER JOIN Consorcio C
+		INNER JOIN Consorcio.Consorcio C
 			ON C.nombre = P.nombre_consorcio;  -- JOIN en el nombre del consorcio
 
 		COMMIT TRANSACTION;
-		
-		--Volvemos a la configuracion original
-		EXEC sp_configure 'Ad Hoc Distributed Queries', @prevAdHoc;
-		EXEC sp_configure 'show advanced options', @prevShowAdvanced;
-		RECONFIGURE;
 
 	END TRY
 	BEGIN CATCH
 		ROLLBACK TRANSACTION;
 
-		--Volvemos a la onfiguracion original
-		EXEC sp_configure 'Ad Hoc Distributed Queries', @prevAdHoc;
-		EXEC sp_configure 'show advanced options', @prevShowAdvanced;
-		RECONFIGURE;
-
 		-- Declaramos e informamos el error
 		DECLARE @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE();
 		THROW;  
 	END CATCH;
+
+	--Volvemos a la configuracion original
+	EXEC sp_configure 'Ad Hoc Distributed Queries', @prevAdHoc;
+	EXEC sp_configure 'show advanced options', @prevShowAdvanced;
+	RECONFIGURE;
 END
 --------------------------------------------------------------------------------
 -- STORED PROCEDURE: Importacion.CargarInquilinoPropietariosDatos
