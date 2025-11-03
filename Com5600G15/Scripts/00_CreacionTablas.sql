@@ -54,7 +54,7 @@ IF OBJECT_ID('Consorcio.Consorcio','U')        IS NOT NULL DROP TABLE Consorcio.
 
 CREATE TABLE Consorcio.Consorcio(
     id_consorcio INT IDENTITY(1,1) PRIMARY KEY,
-    nombre VARCHAR(200) NOT NULL,
+    nombre VARCHAR(200) UNIQUE NOT NULL,
     direccion VARCHAR(200) NOT NULL,
     cant_unidades_funcionales INT NOT NULL,
     m2_totales DECIMAL(10,2) NOT NULL,
@@ -93,7 +93,9 @@ CREATE TABLE Consorcio.Proveedor(
     cuenta VARCHAR(200),
     tipo   VARCHAR(200),
     CONSTRAINT fk_proveedor_consorcio
-      FOREIGN KEY (id_consorcio) REFERENCES Consorcio.Consorcio(id_consorcio)
+      FOREIGN KEY (id_consorcio) REFERENCES Consorcio.Consorcio(id_consorcio),
+	CONSTRAINT uq_nombre_cuenta
+      UNIQUE (nombre_proveedor,cuenta,id_consorcio)
 );
 
 CREATE TABLE Pago.GastoExtraordinario(
