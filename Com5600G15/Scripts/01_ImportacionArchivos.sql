@@ -49,41 +49,35 @@ BEGIN
         -- Ejecutar el BULK INSERT
         EXEC sp_executesql @SQL;
 
+        select * from #TmpUnidadFuncional;
         -- Insertar los datos nuevos en UnidadFuncional
-        INSERT INTO Consorcio.UnidadFuncional (
-            id_consorcio,
-            nombre_consorcio,
-            nroUnidadFuncional,
-            piso,
-            departamento,
-            coeficiente,
-            m2_unidad_funcional,
-            bauleras,
-            cochera,
-            m2_baulera,
-            m2_cochera
-        )
-        SELECT 
-            c.id_consorcio,
-            c.nombre,
-            TRY_CAST(t.nroUnidadFuncional AS INT),
-            LTRIM(RTRIM(t.Piso)),
-            LTRIM(RTRIM(t.Departamento)),
-            TRY_CAST(REPLACE(t.Coeficiente, ',', '.') AS DECIMAL(10,4)),
-            TRY_CAST(t.m2_unidad_funcional AS DECIMAL(10,2)),
-            CASE WHEN UPPER(LTRIM(RTRIM(t.Bauleras))) = 'SI' THEN 1 ELSE 0 END,
-            CASE WHEN UPPER(LTRIM(RTRIM(t.Cochera))) = 'SI' THEN 1 ELSE 0 END,
-            TRY_CAST(t.m2_baulera AS DECIMAL(10,2)),
-            TRY_CAST(t.m2_cochera AS DECIMAL(10,2))
-        FROM #TmpUnidadFuncional t
-        INNER JOIN dbo.Consorcio c
-            ON c.nombre = LTRIM(RTRIM(t.NombreConsorcio))
-        WHERE NOT EXISTS (
-            SELECT 1 
-            FROM dbo.UnidadFuncional u
-            WHERE u.id_consorcio = c.id_consorcio
-              AND u.nroUnidadFuncional = TRY_CAST(t.nroUnidadFuncional AS INT)
-        );
+		INSERT INTO Consorcio.UnidadFuncional (
+			id_consorcio,
+			piso,
+			departamento,
+			coeficiente,
+			m2_unidad,
+			m2_baulera,
+			m2_cochera
+		)
+		SELECT 
+			c.id_consorcio,
+			LTRIM(RTRIM(t.Piso)),
+			LTRIM(RTRIM(t.Departamento)),
+			TRY_CAST(REPLACE(t.Coeficiente, ',', '.') AS DECIMAL(4,1)),
+			TRY_CAST(t.m2_unidad_funcional AS DECIMAL(10,2)),  -- from the file
+			TRY_CAST(t.m2_baulera AS DECIMAL(10,2)),
+			TRY_CAST(t.m2_cochera AS DECIMAL(10,2))
+		FROM #TmpUnidadFuncional t
+		INNER JOIN Consorcio.Consorcio c
+			ON c.nombre = LTRIM(RTRIM(t.NombreConsorcio))
+		WHERE NOT EXISTS (
+			SELECT 1 
+			FROM Consorcio.UnidadFuncional u
+			WHERE u.id_consorcio = c.id_consorcio
+			  AND u.piso = LTRIM(RTRIM(t.Piso))
+			  AND u.departamento = LTRIM(RTRIM(t.Departamento))
+		);
 
         SET @FilasImportadas = @@ROWCOUNT;
 
@@ -106,7 +100,7 @@ GO
 
 
 CREATE OR ALTER PROCEDURE Importacion.ImportarJSON 
-    @RutaArchivo NVARCHAR(4096)
+    @RutaArchivo NVARCHAR(255)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -169,6 +163,121 @@ BEGIN
 END;
 GO
 
+--------------------------------------------------------------------------------
+--STORED PROCEDURE: Importacion.ImportarConsorciosProveedores
+--------------------------------------------------------------------------------
+IF OBJECT_ID('Importacion.ImportarConsorciosProveedores', 'P') IS NOT NULL
+    DROP PROCEDURE Importacion.ImportarConsorciosProveedores;
+GO
+
+CREATE PROCEDURE Importacion.ImportarConsorciosProveedores
+    @RutaExcel NVARCHAR(255)
+AS
+BEGIN
+	SET NOCOUNT ON;
+	DECLARE @prevShowAdvanced INT,
+			@prevAdHoc INT;
+
+		-- Guarda valores de configracion actual
+		SELECT @prevShowAdvanced = CONVERT(INT, value_in_use)
+		FROM sys.configurations 
+		WHERE name = 'show advanced options';
+
+		SELECT @prevAdHoc = CONVERT(INT, value_in_use)
+		FROM sys.configurations 
+		WHERE name = 'Ad Hoc Distributed Queries';
+
+		IF @prevShowAdvanced = 0
+		BEGIN
+			EXEC sp_configure 'show advanced options', 1;
+			RECONFIGURE;
+		END
+
+		IF @prevAdHoc = 0
+		BEGIN
+			EXEC sp_configure 'Ad Hoc Distributed Queries', 1;
+			RECONFIGURE;
+		END
+
+	BEGIN TRANSACTION;
+
+	BEGIN TRY
+
+
+		CREATE TABLE #TempConsorcios (
+			nombre_consorcio NVARCHAR(200),  --(luego usar para resolver id_consorcio en proveedores)
+			direccion NVARCHAR(200), 
+			cant_unidades_funcionales INT,            
+			m2_totales DECIMAL(10,2)   
+		);
+
+		CREATE TABLE #TempProveedores (
+			tipo NVARCHAR(200),   
+			nombre_proveedor NVARCHAR(200),  
+			cuenta NVARCHAR(200),  
+			nombre_consorcio NVARCHAR(200)   --(luego usar para resolver id_consorcio)
+		);
+
+		-- Importar Consorcios
+		DECLARE @SQL NVARCHAR(1000);
+		SET @SQL = N'
+			INSERT INTO #TempConsorcios
+			SELECT 
+				CAST(F2 AS NVARCHAR(200)) AS F2,
+				CAST(F3 AS NVARCHAR(200)) AS F3,
+				CAST(F4 AS INT) AS F4,
+				CAST(F5 AS DECIMAL(10,2)) AS F5
+			FROM OPENROWSET(
+				''Microsoft.ACE.OLEDB.16.0'',
+				''Excel 12.0 Xml;HDR=NO;Database=' + @RutaExcel +N''',
+				''SELECT * FROM [Consorcios$]''
+			) AS X
+			WHERE NOT (F4 IS NULL OR F4 = '''')' ;
+
+		EXEC sp_executesql @SQL;
+
+		-- Importar Proveedores
+		SET @SQL = N'
+			INSERT INTO #TempProveedores
+			SELECT *
+			FROM OPENROWSET(
+				''Microsoft.ACE.OLEDB.16.0'',
+				''Excel 12.0 Xml;HDR=NO;Database=' + @RutaExcel +N''',
+				''SELECT * FROM [Proveedores$]''
+			) AS X
+			WHERE NOT (F1 IS NULL OR F1 = '''')' ;
+
+		EXEC sp_executesql @SQL;
+
+		-- Insertar en tabla Consorcio de la BD
+		INSERT INTO Consorcio.Consorcio(nombre, direccion, cant_unidades_funcionales, m2_totales, vencimiento1, vencimiento2)
+		SELECT T.nombre_consorcio, T.direccion, T.cant_unidades_funcionales, T.m2_totales, GETDATE(), GETDATE()
+		FROM #TempConsorcios T;
+
+		-- Insertar en tabla Proveedor dela BD, mapeando Consorcio
+		INSERT INTO Consorcio.Proveedor(id_consorcio, nombre_proveedor, cuenta, tipo)
+		SELECT C.id_consorcio, P.nombre_proveedor, P.cuenta, P.tipo
+		FROM #TempProveedores P
+		INNER JOIN Consorcio.Consorcio C
+			ON C.nombre = P.nombre_consorcio;  -- JOIN en el nombre del consorcio
+
+		COMMIT TRANSACTION;
+
+	END TRY
+	BEGIN CATCH
+		ROLLBACK TRANSACTION;
+
+		-- Declaramos e informamos el error
+		DECLARE @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE();
+		THROW;  
+	END CATCH;
+
+	--Volvemos a la configuracion original
+	EXEC sp_configure 'Ad Hoc Distributed Queries', @prevAdHoc;
+	EXEC sp_configure 'show advanced options', @prevShowAdvanced;
+	RECONFIGURE;
+END;
+GO
 --------------------------------------------------------------------------------
 -- STORED PROCEDURE: Importacion.CargarInquilinoPropietariosDatos
 --------------------------------------------------------------------------------

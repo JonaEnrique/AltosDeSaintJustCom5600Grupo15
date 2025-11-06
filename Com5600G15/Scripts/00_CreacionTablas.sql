@@ -28,7 +28,7 @@ GO
 USE Com5600G15
 GO
 	
--- *************** CREACIÓN DE SCHEMAS *************** --
+-- *************** CREACIÃN DE SCHEMAS *************** --
 
 IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Consorcio')  EXEC('CREATE SCHEMA Consorcio');
 IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Pago')       EXEC('CREATE SCHEMA Pago');
@@ -38,28 +38,28 @@ IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Importacion')EXEC('CREATE S
 IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Persona')    EXEC('CREATE SCHEMA Persona');
 
 
--- *************** CREACIÓN DE TABLAS *************** --
+-- *************** CREACIÃN DE TABLAS *************** --
 
-IF OBJECT_ID('Consorcio.Consorcio','U')        IS NOT NULL DROP TABLE Consorcio.Consorcio;
-IF OBJECT_ID('Consorcio.UnidadFuncional','U')  IS NOT NULL DROP TABLE Consorcio.UnidadFuncional;
-IF OBJECT_ID('Consorcio.Persona','U')          IS NOT NULL DROP TABLE Consorcio.Persona;
-IF OBJECT_ID('Pago.Prorrateo','U')            IS NOT NULL DROP TABLE Pago.Prorrateo;
+IF OBJECT_ID('Consorcio.PersonaUnidad','U')    IS NOT NULL DROP TABLE Consorcio.PersonaUnidad;
 IF OBJECT_ID('Pago.PagoAsociado','U')          IS NOT NULL DROP TABLE Pago.PagoAsociado;
+IF OBJECT_ID('Pago.Prorrateo','U')            IS NOT NULL DROP TABLE Pago.Prorrateo;
+IF OBJECT_ID('Consorcio.Persona','U')          IS NOT NULL DROP TABLE Consorcio.Persona;
+IF OBJECT_ID('Consorcio.UnidadFuncional','U')  IS NOT NULL DROP TABLE Consorcio.UnidadFuncional;
 IF OBJECT_ID('Pago.GastoOrdinario','U')        IS NOT NULL DROP TABLE Pago.GastoOrdinario;
 IF OBJECT_ID('Pago.GastoExtraordinario','U')   IS NOT NULL DROP TABLE Pago.GastoExtraordinario;
-IF OBJECT_ID('Consorcio.PersonaUnidad','U')    IS NOT NULL DROP TABLE Consorcio.PersonaUnidad;
 IF OBJECT_ID('Consorcio.EstadoFinanciero','U') IS NOT NULL DROP TABLE Consorcio.EstadoFinanciero;
 IF OBJECT_ID('Consorcio.Proveedor','U')        IS NOT NULL DROP TABLE Consorcio.Proveedor;
+IF OBJECT_ID('Consorcio.Consorcio','U')        IS NOT NULL DROP TABLE Consorcio.Consorcio;
 
 
 CREATE TABLE Consorcio.Consorcio(
     id_consorcio INT IDENTITY(1,1) PRIMARY KEY,
-    nombre VARCHAR(50) NOT NULL,
-    direccion VARCHAR(50) NOT NULL,
+    nombre VARCHAR(200) UNIQUE NOT NULL,
+    direccion VARCHAR(200) NOT NULL,
     cant_unidades_funcionales INT NOT NULL,
     m2_totales DECIMAL(10,2) NOT NULL,
     vencimiento1 DATE NOT NULL,
-    vencimiento2 DATETIME NOT NULL
+    vencimiento2 DATE NOT NULL
 );
 
 CREATE TABLE Consorcio.UnidadFuncional(
@@ -89,11 +89,13 @@ CREATE TABLE Consorcio.Persona(
 CREATE TABLE Consorcio.Proveedor(
     id_proveedor INT IDENTITY(1,1) PRIMARY KEY,
     id_consorcio INT NOT NULL,
-    nombre_proveedor VARCHAR(50) NOT NULL,
-    cuenta VARCHAR(50),
-    tipo   VARCHAR(50),
+    nombre_proveedor VARCHAR(200) NOT NULL,
+    cuenta VARCHAR(200),
+    tipo   VARCHAR(200),
     CONSTRAINT fk_proveedor_consorcio
-      FOREIGN KEY (id_consorcio) REFERENCES Consorcio.Consorcio(id_consorcio)
+      FOREIGN KEY (id_consorcio) REFERENCES Consorcio.Consorcio(id_consorcio),
+	CONSTRAINT uq_nombre_cuenta
+      UNIQUE (nombre_proveedor,cuenta,id_consorcio)
 );
 
 CREATE TABLE Pago.GastoExtraordinario(
