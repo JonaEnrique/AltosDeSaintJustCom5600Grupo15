@@ -409,7 +409,7 @@ GO
 -- STORED PROCEDURE: Importacion.ImportarPagos
 --------------------------------------------------------------------------------
 CREATE OR ALTER PROCEDURE Importacion.ImportarPagos
-    @RutaCsv NVARCHAR(4000)
+    @RutaCsv NVARCHAR(255)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -422,7 +422,7 @@ BEGIN
 
     BEGIN TRY
 
-        DECLARE @sql NVARCHAR(3000);
+        DECLARE @sql NVARCHAR(1000);
 		CREATE TABLE #TmpPago (
 			id			   VARCHAR(40),
             fecha          VARCHAR(15),
