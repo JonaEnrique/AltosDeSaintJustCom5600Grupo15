@@ -440,6 +440,14 @@ BEGIN
 
 		EXEC sp_executesql @sql;
 
+		SELECT t.id AS idPagosInvalidos
+		FROM #TmpPago t
+		WHERE (NULLIF(LTRIM(RTRIM(importe)), '''') IS NULL)
+			OR (NULLIF(LTRIM(RTRIM(fecha)), '''') IS NULL)
+			OR (TRY_CAST(importe AS DECIMAL(10,2)) < 0) 
+			OR TRY_CAST(fecha AS DATE) IS NULL;
+
+		--eliminando tuplas invalidas de pago
 		DELETE FROM #TmpPago
 		WHERE 
 			(NULLIF(LTRIM(RTRIM(importe)), '''') IS NULL)
