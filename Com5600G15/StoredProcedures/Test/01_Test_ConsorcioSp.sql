@@ -27,6 +27,17 @@ EXEC Consorcio.CrearConsorcio
     @vencimiento2 = '2025-01-10 23:59:59',
     @id_consorcio = @id1 OUTPUT;
 
+-- INSERCION EXITOSA DE SEGUNDO CONSORCIO (necesario para la prueba de nombre duplicado)
+DECLARE @id2 INT;
+EXEC Consorcio.CrearConsorcio 
+    @nombre = 'Consorcio Torre Norte',
+    @direccion = 'Av. Santa Fe 5678',
+    @cant_unidades_funcionales = 30,
+    @m2_totales = 2000.00,
+    @vencimiento1 = '2025-02-15',
+    @vencimiento2 = '2025-02-15 23:59:59',
+    @id_consorcio = @id2 OUTPUT;
+
 -- ERROR: NOMBRE YA EXISTE
 DECLARE @id_error1 INT;
 EXEC Consorcio.CrearConsorcio 
