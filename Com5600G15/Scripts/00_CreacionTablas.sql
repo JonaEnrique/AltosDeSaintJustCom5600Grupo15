@@ -155,10 +155,9 @@ CREATE TABLE Consorcio.PersonaUnidad(
 
 CREATE TABLE Pago.PagoAsociado(
     id_expensa     INT IDENTITY(1,1) PRIMARY KEY,
-    id_unidad      INT NOT NULL,
+    id_unidad      INT ,
     fecha          DATE NOT NULL,
-    cvu_cbu        VARCHAR(25) NOT NULL,
-    codigo_cuenta  INT NOT NULL,
+    cvu_cbu        VARCHAR(25) , --los pagos pueden ser no asociados
     importe        DECIMAL(10,2) NOT NULL CHECK (importe > 0),
     CONSTRAINT fk_pagoasoc_unidad
       FOREIGN KEY (id_unidad) REFERENCES Consorcio.UnidadFuncional(id_unidad),

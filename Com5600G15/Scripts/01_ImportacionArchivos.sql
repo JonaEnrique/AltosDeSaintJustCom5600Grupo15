@@ -175,6 +175,11 @@ CREATE PROCEDURE Importacion.ImportarConsorciosProveedores
 AS
 BEGIN
 	SET NOCOUNT ON;
+	IF @RutaExcel IS NULL OR LTRIM(RTRIM(@RutaExcel)) = ''
+    BEGIN
+        RAISERROR('La ruta del excel no puede estar vacía', 16, 1);
+        RETURN;
+    END
 	DECLARE @prevShowAdvanced INT,
 			@prevAdHoc INT;
 
@@ -223,10 +228,10 @@ BEGIN
 		SET @SQL = N'
 			INSERT INTO #TempConsorcios
 			SELECT 
-				CAST(F2 AS NVARCHAR(200)) AS F2,
-				CAST(F3 AS NVARCHAR(200)) AS F3,
-				CAST(F4 AS INT) AS F4,
-				CAST(F5 AS DECIMAL(10,2)) AS F5
+				TRY_CAST(LTRIM(RTRIM(F2)) AS NVARCHAR(200)) AS F2,
+				TRY_CAST(LTRIM(RTRIM(F3)) AS NVARCHAR(200)) AS F3,
+				TRY_CAST(LTRIM(RTRIM(F4)) AS INT) AS F4,
+				TRY_CAST(LTRIM(RTRIM(F5)) AS DECIMAL(10,2)) AS F5
 			FROM OPENROWSET(
 				''Microsoft.ACE.OLEDB.16.0'',
 				''Excel 12.0 Xml;HDR=NO;Database=' + @RutaExcel +N''',
@@ -398,5 +403,81 @@ BEGIN
         DECLARE @ErrorMensaje NVARCHAR(4000) = ERROR_MESSAGE();
         RAISERROR('error en Importacion.CargarInquilinoPropietariosUF: %s', 16, 1, @ErrorMensaje);
 	END CATCH
+END;
+GO
+--------------------------------------------------------------------------------
+-- STORED PROCEDURE: Importacion.ImportarPagos
+--------------------------------------------------------------------------------
+CREATE OR ALTER PROCEDURE Importacion.ImportarPagos
+    @RutaCsv NVARCHAR(4000)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @RutaCsv IS NULL OR LTRIM(RTRIM(@RutaCsv)) = ''
+    BEGIN
+        RAISERROR('La ruta del archivo no puede estar vacía', 16, 1);
+        RETURN;
+    END
+
+    BEGIN TRY
+
+        DECLARE @sql NVARCHAR(3000);
+		CREATE TABLE #TmpPago (
+			id			   VARCHAR(40),
+            fecha          VARCHAR(15),
+			cvu_cbu        VARCHAR(25),
+			importe        VARCHAR(40)
+        );
+
+		SET @sql=N'BULK INSERT #TmpPago
+		FROM ''' + @RutaCsv +N'''
+		WITH (
+			FIRSTROW = 2,
+			FIELDTERMINATOR = '','',
+			ROWTERMINATOR = ''\n''
+		);
+		DELETE FROM #TmpPago
+		WHERE 
+			(NULLIF(LTRIM(RTRIM(importe)), '''') IS NULL)
+			OR (NULLIF(LTRIM(RTRIM(fecha)), '''') IS NULL)
+			OR (TRY_CAST(importe AS DECIMAL(10,2)) < 0) 
+			OR TRY_CAST(fecha AS DATE) IS NULL;';
+
+		EXEC sp_executesql @sql;
+
+		
+			
+		INSERT INTO Pago.PagoAsociado (fecha,cvu_cbu,importe)
+		SELECT 
+			TRY_CAST(t.fecha AS DATE),
+			LTRIM(RTRIM(t.cvu_cbu)),
+			TRY_CAST(t.importe AS DECIMAL(10,2))
+		FROM #TmpPago t;
+
+		WITH pagoPersona AS (
+		SELECT 
+			a.cvu_cbu,
+			u.id_unidad 
+		FROM Pago.PagoAsociado a
+		INNER JOIN Consorcio.Persona p ON a.cvu_cbu=p.cbu_cvu
+		INNER JOIN Consorcio.PersonaUnidad u ON u.dni=p.dni
+		)
+		UPDATE p
+		SET p.id_unidad = c.id_unidad
+		FROM Pago.PagoAsociado p
+		INNER JOIN pagoPersona c ON c.cvu_cbu=p.cvu_cbu;
+
+        DECLARE @FilasImportadas INT;
+        SELECT @FilasImportadas = COUNT(*) FROM #TmpPago;
+
+        PRINT 'Importación completada (datos): ' + CAST(@FilasImportadas AS NVARCHAR(10)) + ' registros insertados en PagoAsociado.';
+    END TRY
+    BEGIN CATCH
+        IF OBJECT_ID('tempdb..#TmpPago') IS NOT NULL
+            DROP TABLE #TmpPago;
+
+        THROW;
+    END CATCH
 END;
 GO
