@@ -436,15 +436,16 @@ BEGIN
 			FIRSTROW = 2,
 			FIELDTERMINATOR = '','',
 			ROWTERMINATOR = ''\n''
-		);
+		);';
+
+		EXEC sp_executesql @sql;
+
 		DELETE FROM #TmpPago
 		WHERE 
 			(NULLIF(LTRIM(RTRIM(importe)), '''') IS NULL)
 			OR (NULLIF(LTRIM(RTRIM(fecha)), '''') IS NULL)
 			OR (TRY_CAST(importe AS DECIMAL(10,2)) < 0) 
-			OR TRY_CAST(fecha AS DATE) IS NULL;';
-
-		EXEC sp_executesql @sql;
+			OR TRY_CAST(fecha AS DATE) IS NULL;
 
 		
 			
