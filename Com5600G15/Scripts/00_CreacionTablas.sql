@@ -30,12 +30,12 @@ GO
 	
 -- *************** CREACIÃN DE SCHEMAS *************** --
 
-IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Consorcio')  EXEC('CREATE SCHEMA Consorcio');
-IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Pago')       EXEC('CREATE SCHEMA Pago');
-IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Reporte')    EXEC('CREATE SCHEMA Reporte');
-IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Seguridad')  EXEC('CREATE SCHEMA Seguridad');
-IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Importacion')EXEC('CREATE SCHEMA Importacion');
-IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Persona')    EXEC('CREATE SCHEMA Persona');
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Consorcio')   EXEC('CREATE SCHEMA Consorcio');
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Pago')        EXEC('CREATE SCHEMA Pago');
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Reporte')     EXEC('CREATE SCHEMA Reporte');
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Seguridad')   EXEC('CREATE SCHEMA Seguridad');
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Importacion') EXEC('CREATE SCHEMA Importacion');
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Persona')     EXEC('CREATE SCHEMA Persona');
 
 
 -- *************** CREACIÃN DE TABLAS *************** --
@@ -71,8 +71,6 @@ CREATE TABLE Consorcio.UnidadFuncional(
     m2_unidad   DECIMAL(10,2) NOT NULL,
     m2_baulera  DECIMAL(10,2) NOT NULL DEFAULT(0),
     m2_cochera  DECIMAL(10,2) NOT NULL DEFAULT(0),
-    precio_cochera DECIMAL(10,2) NOT NULL DEFAULT(0),
-    precio_baulera DECIMAL(10,2) NOT NULL DEFAULT(0),
     CONSTRAINT fk_UF_consorcio
       FOREIGN KEY (id_consorcio) REFERENCES Consorcio.Consorcio(id_consorcio)
 );
