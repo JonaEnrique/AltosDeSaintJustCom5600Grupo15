@@ -6,11 +6,11 @@ GO
 Esto puede cambiarse a gusto siempre y cuando se modifique el parametro enviado a los SP*/
 
 
---Importar proveedores de servicios para los consorcios
+--Importar proveedores de servicios para los consorcios y consorcios
 EXECUTE Importacion.ImportarConsorciosProveedores @RutaExcel = 'C:\ArchivosBDA\datos varios.xlsx'
 GO
 
---ImportarUnidadFuncional
+--ImportarUnidadesFuncionales
 EXECUTE Importacion.CargarUnidadFuncional @RutaArchivo = 'C:\ArchivosBDA\UF por consorcio.txt'
 GO
 
@@ -18,11 +18,11 @@ GO
 EXECUTE Importacion.ImportarJSON @RutaArchivo = 'C:\ArchivosBDA\Servicios.Servicios.json'
 GO
 
---Importar datos de inquilinos y propietarios
-EXECUTE Importacion.CargarInquilinoPropietariosDatos @RutaArchivo = 'C:\ArchivosBDA\Inquilino-propietarios-datos.csv'
-
---Importar datos Unidad Funcional
+--Importar datos Unidad Funcional (preguntar al grupo)
 EXECUTE Importacion.CargarInquilinoPropietariosUF @RutaArchivo = 'C:\ArchivosBDA\Inquilino-propietarios-UF.csv'
 
---Importar PagosConsorcios
+--Importar datos de inquilinos y propietarios (Corregir como pasar a la tabla en bd)
+EXECUTE Importacion.CargarInquilinoPropietariosDatos @RutaArchivo = 'C:\ArchivosBDA\Inquilino-propietarios-datos.csv'
+
+--Importar PagosConsorcios (Corregir)
 EXECUTE Importacion.ImportarPagos @RutaCsv = 'C:\ArchivosBDA\pagos_consorcios.csv'
