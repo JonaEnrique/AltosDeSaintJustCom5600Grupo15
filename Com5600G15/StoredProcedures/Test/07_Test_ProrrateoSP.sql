@@ -16,133 +16,213 @@ GO
 
 -------<<<<<<<TABLA PRORRATEO>>>>>>>-------
 
---PREPARACION (creamos registros en consorcio y unidadFuncional)
-
-DECLARE @id_consorcio INT;
-DECLARE @id_unidad1 INT;
-DECLARE @id_unidad2 INT;
-
-EXEC Consorcio.CrearConsorcio
-    @nombre = 'Consorcio Prueba Prorrateo',
-    @direccion = 'Av. Test 123',
-    @cant_unidades_funcionales = 2,
-    @m2_totales = 500.00,
-    @vencimiento1 = '2025-11-01',
-    @vencimiento2 = '2025-11-15',
-    @id_consorcio = @id_consorcio OUTPUT;
-
-EXEC Consorcio.CrearUnidadFuncional
-    @id_consorcio = @id_consorcio,
+-- INSERCION EXITOSA
+DECLARE @id_prorr1 INT;
+EXEC Pago.CrearProrrateo
+    @id_unidad = 1,
+    @fecha = '2025-01-15',
+    @porcentaje_m2 = 5.250,
     @piso = '1',
-    @departamento = 'A',
-    @coeficiente = 10.0,
-    @m2_unidad = 70.00,
-    @m2_baulera = 5.00,
-    @m2_cochera = 12.00,
-    @precio_cochera = 15000.00,
-    @precio_baulera = 5000.00,
-    @id_unidad = @id_unidad1 OUTPUT;
+    @depto = 'A',
+    @nombre_propietario = 'Juan Pérez',
+    @precio_cocheras = 15000.00,
+    @precio_bauleras = 5000.00,
+    @saldo_anterior_abonado = 0.00,
+    @pagos_recibidos = 50000.00,
+    @deudas = 0.00,
+    @intereses = 0.00,
+    @expensas_ordinarias = 45000.00,
+    @expensas_extraordinarias = 5000.00,
+    @total_a_pagar = 50000.00,
+    @id_prorrateo = @id_prorr1 OUTPUT;
+GO
 
-EXEC Consorcio.CrearUnidadFuncional
-    @id_consorcio = @id_consorcio,
+DECLARE @id_prorr2 INT;
+EXEC Pago.CrearProrrateo
+    @id_unidad = 2,
+    @fecha = '2025-01-15',
+    @porcentaje_m2 = 7.500,
     @piso = '2',
-    @departamento = 'B',
-    @coeficiente = 9.5,
-    @m2_unidad = 68.00,
-    @m2_baulera = 4.00,
-    @m2_cochera = 10.00,
-    @precio_cochera = 14000.00,
-    @precio_baulera = 4500.00,
-    @id_unidad = @id_unidad2 OUTPUT;
-
--- INSERCION
-
---INSERCION EXITOSA
-DECLARE @id_prorrateo1 INT;
-DECLARE @id_prorrateo2 INT;
-DECLARE @id_prorrateo3 INT;
-
-EXEC Pago.CrearProrrateo
-    @id_unidad = @id_unidad1,
-    @fecha = '2025-11-01',
-    @porcentaje_m2 = 50.000,
-    @piso = '1',
-    @depto = 'A',
-    @nombre_propietario = 'Juan Perez',
-    @precio_cocheras = 10000.00,
-    @precio_bauleras = 5000.00,
-    @saldo_anterior_abonado = 0,
-    @pagos_recibidos = 0,
-    @deudas = 0,
-    @intereses = 0,
-    @expensas_ordinarias = 20000.00,
-    @expensas_extraordinarias = 0,
-    @total_a_pagar = 35000.00,
-    @id_prorrateo = @id_prorrateo1 OUTPUT;
-
---ERROR PRORRATEO YA EXISTE PARA LA FECHA Y UNIDAD INDICADAS
-EXEC Pago.CrearProrrateo
-    @id_unidad = @id_unidad1,
-    @fecha = '2025-11-01',
-    @porcentaje_m2 = 50.000,
-    @piso = '1',
-    @depto = 'A',
-    @nombre_propietario = 'Juan Perez',
-    @precio_cocheras = 10000.00,
-    @precio_bauleras = 5000.00,
-    @saldo_anterior_abonado = 0,
-    @pagos_recibidos = 0,
-    @deudas = 0,
-    @intereses = 0,
-    @expensas_ordinarias = 20000.00,
-    @expensas_extraordinarias = 0,
-    @total_a_pagar = 35000.00,
-    @id_prorrateo = @id_prorrateo2 OUTPUT;
-
---ERROR VALOR NEGATIVO
-EXEC Pago.CrearProrrateo
-    @id_unidad = @id_unidad2,
-    @fecha = '2025-11-01',
-    @porcentaje_m2 = 50.000,
-    @piso = '1',
     @depto = 'B',
-    @nombre_propietario = 'Maria Gomez',
-    @precio_cocheras = -5000.00,
+    @nombre_propietario = 'María González',
+    @precio_cocheras = 20000.00,
+    @precio_bauleras = 7000.00,
+    @deudas = 10000.00,
+    @intereses = 500.00,
+    @expensas_ordinarias = 60000.00,
+    @total_a_pagar = 70500.00,
+    @id_prorrateo = @id_prorr2 OUTPUT;
+GO
+
+DECLARE @id_prorr3 INT;
+EXEC Pago.CrearProrrateo
+    @id_unidad = 3,
+    @fecha = '2025-02-15',
+    @porcentaje_m2 = 4.100,
+    @piso = 'PB',
+    @depto = 'C',
+    @nombre_propietario = 'Carlos Rodríguez',
+    @expensas_ordinarias = 35000.00,
+    @total_a_pagar = 35000.00,
+    @id_prorrateo = @id_prorr3 OUTPUT;
+GO
+
+-- ERROR: UNIDAD FUNCIONAL INEXISTENTE
+DECLARE @id_prorr_error1 INT;
+EXEC Pago.CrearProrrateo
+    @id_unidad = 99999,
+    @fecha = '2025-01-15',
+    @porcentaje_m2 = 5.000,
+    @piso = '1',
+    @depto = 'A',
+    @total_a_pagar = 50000.00,
+    @id_prorrateo = @id_prorr_error1 OUTPUT;
+GO
+
+-- ERROR: PRORRATEO DUPLICADO (MISMA UNIDAD Y FECHA)
+DECLARE @id_prorr_error2 INT;
+EXEC Pago.CrearProrrateo
+    @id_unidad = 1,
+    @fecha = '2025-01-15',
+    @porcentaje_m2 = 6.000,
+    @piso = '1',
+    @depto = 'A',
+    @total_a_pagar = 60000.00,
+    @id_prorrateo = @id_prorr_error2 OUTPUT;
+GO
+
+-- ERROR: PORCENTAJE_M2 <= 0
+DECLARE @id_prorr_error3 INT;
+EXEC Pago.CrearProrrateo
+    @id_unidad = 1,
+    @fecha = '2025-03-15',
+    @porcentaje_m2 = 0,
+    @piso = '1',
+    @depto = 'A',
+    @total_a_pagar = 50000.00,
+    @id_prorrateo = @id_prorr_error3 OUTPUT;
+GO
+
+-- ERROR: SALDO_ANTERIOR_ABONADO NEGATIVO
+DECLARE @id_prorr_error4 INT;
+EXEC Pago.CrearProrrateo
+    @id_unidad = 1,
+    @fecha = '2025-03-15',
+    @porcentaje_m2 = 5.000,
+    @piso = '1',
+    @depto = 'A',
+    @saldo_anterior_abonado = -1000.00,
+    @total_a_pagar = 50000.00,
+    @id_prorrateo = @id_prorr_error4 OUTPUT;
+GO
+
+-- ERROR: DEUDAS NEGATIVAS
+DECLARE @id_prorr_error5 INT;
+EXEC Pago.CrearProrrateo
+    @id_unidad = 1,
+    @fecha = '2025-03-15',
+    @porcentaje_m2 = 5.000,
+    @piso = '1',
+    @depto = 'A',
+    @deudas = -5000.00,
+    @total_a_pagar = 50000.00,
+    @id_prorrateo = @id_prorr_error5 OUTPUT;
+GO
+
+-- ERROR: TOTAL_A_PAGAR NEGATIVO
+DECLARE @id_prorr_error6 INT;
+EXEC Pago.CrearProrrateo
+    @id_unidad = 1,
+    @fecha = '2025-03-15',
+    @porcentaje_m2 = 5.000,
+    @piso = '1',
+    @depto = 'A',
+    @total_a_pagar = -50000.00,
+    @id_prorrateo = @id_prorr_error6 OUTPUT;
+GO
+
+-- MODIFICAR PRORRATEO
+-- MODIFICACION EXITOSA
+EXEC Pago.ModificarProrrateo
+    @id_prorrateo = 1,
+    @porcentaje_m2 = 5.500,
+    @piso = '1',
+    @depto = 'A',
+    @nombre_propietario = 'Juan Pérez',
+    @precio_cocheras = 18000.00,
+    @precio_bauleras = 6000.00,
+    @saldo_anterior_abonado = 0.00,
+    @pagos_recibidos = 55000.00,
+    @deudas = 0.00,
+    @intereses = 0.00,
+    @expensas_ordinarias = 48000.00,
+    @expensas_extraordinarias = 7000.00,
+    @total_a_pagar = 55000.00;
+GO
+
+-- ERROR: ID INVALIDO
+EXEC Pago.ModificarProrrateo
+    @id_prorrateo = 99999,
+    @porcentaje_m2 = 5.000,
+    @piso = '1',
+    @depto = 'A',
+    @nombre_propietario = 'Nombre',
+    @precio_cocheras = 0,
     @precio_bauleras = 0,
     @saldo_anterior_abonado = 0,
     @pagos_recibidos = 0,
     @deudas = 0,
     @intereses = 0,
-    @expensas_ordinarias = 20000.00,
+    @expensas_ordinarias = 0,
     @expensas_extraordinarias = 0,
-    @total_a_pagar = 20000.00,
-    @id_prorrateo = @id_prorrateo3 OUTPUT;
+    @total_a_pagar = 0;
+GO
 
---MODIFICACION
-
---MODIFICACION EXITOSA
+-- ERROR: PORCENTAJE_M2 <= 0
 EXEC Pago.ModificarProrrateo
-    @id_prorrateo = @id_prorrateo1,
-    @precio_cocheras = 8000.00,
-    @precio_bauleras = 4000.00,
-    @expensas_extraordinarias = 3000.00;
+    @id_prorrateo = 1,
+    @porcentaje_m2 = -1.000,
+    @piso = '1',
+    @depto = 'A',
+    @nombre_propietario = 'Juan Pérez',
+    @precio_cocheras = 0,
+    @precio_bauleras = 0,
+    @saldo_anterior_abonado = 0,
+    @pagos_recibidos = 0,
+    @deudas = 0,
+    @intereses = 0,
+    @expensas_ordinarias = 0,
+    @expensas_extraordinarias = 0,
+    @total_a_pagar = 0;
+GO
 
---ERROR ID INEXISTENTE
+-- ERROR: INTERESES NEGATIVOS
 EXEC Pago.ModificarProrrateo
-    @id_prorrateo = 999,
-    @precio_cocheras = 5000.00;
+    @id_prorrateo = 1,
+    @porcentaje_m2 = 5.000,
+    @piso = '1',
+    @depto = 'A',
+    @nombre_propietario = 'Juan Pérez',
+    @precio_cocheras = 0,
+    @precio_bauleras = 0,
+    @saldo_anterior_abonado = 0,
+    @pagos_recibidos = 0,
+    @deudas = 0,
+    @intereses = -100.00,
+    @expensas_ordinarias = 0,
+    @expensas_extraordinarias = 0,
+    @total_a_pagar = 0;
+GO
 
---ERROR: VALOR NEGATIVO
-EXEC Pago.ModificarProrrateo
-    @id_prorrateo = @id_prorrateo1,
-    @expensas_ordinarias = -20000.00;
+-- ELIMINAR PRORRATEO
+-- ERROR: ID INVALIDO
+EXEC Pago.EliminarProrrateo @id_prorrateo = 99999;
+GO
 
---ELIMINACION
+-- ELIMINACION EXITOSA
+EXEC Pago.EliminarProrrateo @id_prorrateo = 3;
+GO
 
---ELIMINACION EXITOSA
-EXEC Pago.EliminarProrrateo @id_prorrateo = @id_prorrateo1;
-
---ERROR ID INEXISTENTE
-EXEC Pago.EliminarProrrateo @id_prorrateo = 999;
-
+-- MOSTRAR TABLA PRORRATEO
+SELECT * FROM Pago.Prorrateo;
 GO
