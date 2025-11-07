@@ -101,7 +101,7 @@ CREATE TABLE Pago.GastoExtraordinario(
     id_consorcio INT NOT NULL,
     detalle      VARCHAR(255) NOT NULL,
     importe      DECIMAL(10,2) NOT NULL CHECK (importe > 0),
-	importe_total DECIMAL(10,2) NOT NULL DEFAULT(0) CHECK (importe_total >= importe AND importe_total > 0),
+	importe_total DECIMAL(10,2) NOT NULL DEFAULT(0) CHECK (importe_total > 0),
     fecha        DATE NOT NULL,
     pago_cuotas  BIT  NOT NULL DEFAULT(0),
     nro_cuota    INT  NULL,
@@ -112,7 +112,7 @@ CREATE TABLE Pago.GastoExtraordinario(
 	CHECK (
 	    (pago_cuotas = 0 AND importe_total = importe)
 	    OR
-	    (pago_cuotas = 1 AND importe_total > importe)
+	    (pago_cuotas = 1 AND importe_total > importe))
 );
 
 CREATE TABLE Pago.GastoOrdinario(
