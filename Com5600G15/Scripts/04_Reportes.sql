@@ -147,21 +147,41 @@ EXEC Reporte.sp_reporte_recaudacion_mes_depto
 --------------------------------------------------------------------------------
 --REPORTE 3
 --------------------------------------------------------------------------------
-/*NOTA: Este reporte calcula la recaudacion total ESPERADA (no real) segun su procedencia*/
+/*NOTA: Este reporte calcula la recaudacion total ESPERADA (no real) segun su procedencia
+para un consorcio y período determinado, basandose en registros de la tabla de Pago.Prorrateo*/
 CREATE OR ALTER PROCEDURE Reporte.sp_reporte_recaudacion_segun_procedencia
+(
+    @nombre_consorcio VARCHAR(200),
+    @fecha_desde DATE,
+    @fecha_hasta DATE
+)
 AS
 BEGIN
-SELECT
-    FORMAT(p.fecha, 'yyyy-MM') AS Periodo,
-    SUM(p.expensas_ordinarias) AS TotalOrdinario,
-    SUM(p.expensas_extraordinarias) AS TotalExtraordinario,
-    SUM(p.intereses) AS TotalIntereses,
-    SUM(p.total_a_pagar) AS TotalAPagar
-FROM Pago.Prorrateo AS p
-GROUP BY FORMAT(p.fecha, 'yyyy-MM')
-ORDER BY Periodo;
+    SET NOCOUNT ON;
+
+    SELECT
+        FORMAT(p.fecha, 'yyyy-MM') AS Periodo,
+        SUM(p.expensas_ordinarias) AS TotalOrdinario,
+        SUM(p.expensas_extraordinarias) AS TotalExtraordinario,
+        SUM(p.intereses) AS TotalIntereses,
+        SUM(p.total_a_pagar) AS TotalAPagar
+    FROM Pago.Prorrateo AS p
+        INNER JOIN Consorcio.UnidadFuncional AS uf
+            ON p.id_unidad = uf.id_unidad
+        INNER JOIN Consorcio.Consorcio AS c
+            ON uf.id_consorcio = c.id_consorcio
+    WHERE c.nombre = @nombre_consorcio
+      AND p.fecha BETWEEN @fecha_desde AND @fecha_hasta
+    GROUP BY FORMAT(p.fecha, 'yyyy-MM')
+    ORDER BY Periodo;
 END;
 GO
+
+--ejemplo de ejecucion
+EXEC Reporte.sp_reporte_recaudacion_segun_procedencia
+     @nombre_consorcio = 'Torre Belgrano',
+     @fecha_desde = '2025-01-01',
+     @fecha_hasta = '2025-12-31';
 
 --------------------------------------------------------------------------------
 --REPORTE 4
