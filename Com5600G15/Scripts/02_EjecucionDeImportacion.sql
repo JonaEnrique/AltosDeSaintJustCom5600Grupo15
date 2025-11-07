@@ -5,14 +5,18 @@ GO
 /*NOTA: la ruta de los archivos como los nombres de los archivos en si se han elegido arbitrariamente.
 Esto puede cambiarse a gusto siempre y cuando se modifique el parametro enviado a los SP*/
 
---ImportarUnidadFuncional
-EXECUTE Importacion.CargarUnidadFuncional @RutaArchivo = 'C:\ArchivosBDA\UF por consorcio.txt'
-
---JSON (Gastos por Consorcio)
-EXECUTE Importacion.ImportarJSON @RutaArchivo = 'C:\ArchivosBDA\Servicios.Servicios.json'
 
 --Importar proveedores de servicios para los consorcios
 EXECUTE Importacion.ImportarConsorciosProveedores @RutaExcel = 'C:\ArchivosBDA\datos varios.xlsx'
+GO
+
+--ImportarUnidadFuncional
+EXECUTE Importacion.CargarUnidadFuncional @RutaArchivo = 'C:\ArchivosBDA\UF por consorcio.txt'
+GO
+
+--JSON (Gastos por Consorcio)
+EXECUTE Importacion.ImportarJSON @RutaArchivo = 'C:\ArchivosBDA\Servicios.Servicios.json'
+GO
 
 --Importar datos de inquilinos y propietarios
 EXECUTE Importacion.CargarInquilinoPropietariosDatos @RutaArchivo = 'C:\ArchivosBDA\Inquilino-propietarios-datos.csv'

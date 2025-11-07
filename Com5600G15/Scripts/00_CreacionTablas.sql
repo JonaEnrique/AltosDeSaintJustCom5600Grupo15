@@ -116,7 +116,7 @@ CREATE TABLE Pago.GastoOrdinario(
     fecha        DATE CHECK (YEAR(fecha) > 1958 AND YEAR(fecha) <= YEAR(SYSDATETIME())),
     importe      DECIMAL(10,2) NOT NULL CHECK (importe > 0),
     nro_factura  INT NOT NULL,
-    id_proveedor INT NOT NULL,
+    id_proveedor INT,
     descripcion  VARCHAR(60),
     CONSTRAINT fk_gord_consorcio
       FOREIGN KEY (id_consorcio) REFERENCES Consorcio.Consorcio(id_consorcio),

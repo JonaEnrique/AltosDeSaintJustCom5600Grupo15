@@ -98,6 +98,44 @@ BEGIN
 END;
 GO
 
+CREATE OR ALTER FUNCTION dbo.NormalizarNumero (@num NVARCHAR(50))
+RETURNS DECIMAL(18,2)
+AS
+BEGIN
+    DECLARE @limpio NVARCHAR(50) = @num;
+
+    IF @limpio LIKE '%,%' AND @limpio LIKE '%.%' AND CHARINDEX(',', @limpio) < CHARINDEX('.', @limpio)
+	BEGIN
+        -- estilo US: 22,648.59 -> eliminar ','
+        SET @limpio = REPLACE(@limpio, ',', '');
+	END
+    ELSE IF @limpio LIKE '%.%' AND @limpio LIKE '%,%' AND CHARINDEX('.', @limpio) < CHARINDEX(',', @limpio)
+	BEGIN
+        -- estilo EU: 33.706,04 -> eliminar '.' y reemplazar ',' con '.'
+        SET @limpio = REPLACE(@limpio, '.', '');
+        SET @limpio = REPLACE(@limpio, ',', '.');
+	END
+    ELSE IF @limpio LIKE '%,%' AND CHARINDEX(',', @limpio) = LEN(@limpio)-2
+	BEGIN
+        -- por las dudas: 9.613,50 -> reemplazar ',' con '.'
+        SET @limpio = REPLACE(@limpio, ',', '.');
+	END
+    ELSE
+	BEGIN
+        SET @limpio = REPLACE(@limpio, ',', ''); -- fallback
+	END
+
+    RETURN TRY_CAST(@limpio AS DECIMAL(10,2));
+END;
+GO
+
+
+
+IF NOT EXISTS (SELECT * FROM sys.sequences WHERE name = 'Seq_Factura')
+    CREATE SEQUENCE Seq_Factura
+        START WITH 1
+        INCREMENT BY 1;
+GO
 
 CREATE OR ALTER PROCEDURE Importacion.ImportarJSON 
     @RutaArchivo NVARCHAR(255)
@@ -110,56 +148,129 @@ BEGIN
             RAISERROR('La ruta del archivo no puede estar vacía', 16, 1);
             RETURN;
         END
-            
-    CREATE TABLE ##Consorcios (
+
+	
+    CREATE TABLE #TempServicios (
         id NVARCHAR(50),
         nombre_consorcio NVARCHAR(100),
         mes NVARCHAR(20),
-        bancarios DECIMAL(18,2),
-        limpieza DECIMAL(18,2),
-        administracion DECIMAL(18,2),
-        seguros DECIMAL(18,2),
-        gastos_generales DECIMAL(18,2),
-        servicios_agua DECIMAL(18,2),
-        servicio_luz DECIMAL(18,2)
+        bancarios DECIMAL(10,2),
+        limpieza DECIMAL(10,2),
+        administracion DECIMAL(10,2),
+        seguros DECIMAL(10,2),
+        gastos_generales DECIMAL(10,2),
+        servicios_agua DECIMAL(10,2),
+        servicio_luz DECIMAL(10,2)
     );
+	
+	DECLARE @sql NVARCHAR(MAX);
+	SET @sql = 
+	N'
+	DECLARE @json NVARCHAR(MAX);
+	SELECT @json = BulkColumn
+	FROM OPENROWSET(BULK '''+ @RutaArchivo +N''' , SINGLE_CLOB) AS j;
 
-    DECLARE @sql NVARCHAR(MAX);
+	INSERT INTO #TempServicios
+	SELECT 
+		id,
+		nombre_consorcio,
+		mes,
+		dbo.NormalizarNumero(seguros) AS seguros,
+		dbo.NormalizarNumero(limpieza) AS limpieza,
+		dbo.NormalizarNumero(administracion) AS administracion,
+		dbo.NormalizarNumero(bancarios) AS bancarios,
+		dbo.NormalizarNumero(gastos_generales) AS gastos_generales,
+		dbo.NormalizarNumero(servicios_agua) AS servicios_agua,
+		dbo.NormalizarNumero(servicio_luz) AS servicio_luz
+	FROM OPENJSON(@json)
+	WITH (
+		id NVARCHAR(50) ''$._id."$oid"'',
+		nombre_consorcio NVARCHAR(200) ''$."Nombre del consorcio"'',
+		mes NVARCHAR(20) ''$.Mes'',
+		bancarios NVARCHAR(20) ''$.BANCARIOS'',
+		limpieza NVARCHAR(20) ''$.LIMPIEZA'',
+		administracion NVARCHAR(20) ''$.ADMINISTRACION'',
+		seguros NVARCHAR(20) ''$.SEGUROS'',
+		gastos_generales NVARCHAR(20) ''$."GASTOS GENERALES"'',
+		servicios_agua NVARCHAR(20) ''$."SERVICIOS PUBLICOS-Agua"'',
+		servicio_luz NVARCHAR(20) ''$."SERVICIOS PUBLICOS-Luz"''
+	);';
+	EXEC sp_executesql @sql ;
 
-    SET @sql = N'
-    INSERT INTO ##Consorcios
-    (id, nombre_consorcio, mes, bancarios, limpieza, administracion, seguros, gastos_generales, servicios_agua, servicio_luz)
-    SELECT 
-        id,
-        nombre_consorcio,
-        mes,
-        TRY_CAST(REPLACE(REPLACE(bancarios, ''.'', ''''), '','', ''.'') AS DECIMAL(18,2)),
-        TRY_CAST(REPLACE(REPLACE(limpieza, ''.'', ''''), '','', ''.'') AS DECIMAL(18,2)),
-        TRY_CAST(REPLACE(REPLACE(administracion, ''.'', ''''), '','', ''.'') AS DECIMAL(18,2)),
-        TRY_CAST(REPLACE(REPLACE(seguros, ''.'', ''''), '','', ''.'') AS DECIMAL(18,2)),
-        TRY_CAST(REPLACE(REPLACE(gastos_generales, ''.'', ''''), '','', ''.'') AS DECIMAL(18,2)),
-        TRY_CAST(REPLACE(REPLACE(servicios_agua, ''.'', ''''), '','', ''.'') AS DECIMAL(18,2)),
-        TRY_CAST(REPLACE(REPLACE(servicio_luz, ''.'', ''''), '','', ''.'') AS DECIMAL(18,2))
-    FROM OPENROWSET (
-         BULK ''' + @RutaArchivo + ''',
-         SINGLE_CLOB
-    ) AS j
-    CROSS APPLY OPENJSON(BulkColumn)
-    WITH (
-        id NVARCHAR(50) ''$._id.$oid'',
-        nombre_consorcio NVARCHAR(100) ''$.Nombre del consorcio'',
-        mes NVARCHAR(20) ''$.Mes'',
-        bancarios NVARCHAR(20) ''$.BANCARIOS'',
-        limpieza NVARCHAR(20) ''$.LIMPIEZA'',
-        administracion NVARCHAR(20) ''$.ADMINISTRACION'',
-        seguros NVARCHAR(20) ''$.SEGUROS'',
-        gastos_generales NVARCHAR(20) ''$.GASTOS GENERALES'',
-        servicios_agua NVARCHAR(20) ''$.SERVICIOS PUBLICOS-Agua'',
-        servicio_luz NVARCHAR(20) ''$.SERVICIOS PUBLICOS-Luz''
-    );
-    ';
+	DELETE #TempServicios 
+	WHERE nombre_consorcio IS NULL;
 
-    EXEC sp_executesql @sql;
+	DECLARE @TipoGastoMap TABLE (
+    json_tipo NVARCHAR(50),
+    prov_tipo NVARCHAR(50)
+	);
+
+	INSERT INTO @TipoGastoMap VALUES
+		('BANCARIOS', 'GASTOS BANCARIOS'),
+		('LIMPIEZA', 'LIMPIEZA'),
+		('ADMINISTRACION', 'ADMINISTRACION'),
+		('SEGUROS', 'SEGUROS'),
+		('GASTOS GENERALES', 'GASTOS GENERALES'),
+		('SERVICIOS AGUA', 'AGUA'),
+		('SERVICIOS LUZ', 'LUZ');
+
+	INSERT INTO Pago.GastoOrdinario
+	(
+	id_consorcio,
+	tipo_gasto,
+	fecha,
+	nro_factura,
+	importe,
+	id_proveedor,
+	descripcion
+	)
+	SELECT 
+	c.id_consorcio,
+	m.json_tipo AS tipo_gasto,
+	DATEFROMPARTS(YEAR(GETDATE()), 
+		CASE gs.mes
+			WHEN 'enero' THEN 1
+			WHEN 'febrero' THEN 2
+			WHEN 'marzo' THEN 3
+			WHEN 'abril' THEN 4
+			WHEN 'mayo' THEN 5
+			WHEN 'junio' THEN 6
+			WHEN 'julio' THEN 7
+			WHEN 'agosto' THEN 8
+			WHEN 'septiembre' THEN 9
+			WHEN 'octubre' THEN 10
+			WHEN 'noviembre' THEN 11
+			WHEN 'diciembre' THEN 12
+			ELSE 1
+		END, 1) AS fecha,
+	NEXT VALUE FOR Seq_Factura,
+	gs.importe,
+	p.id_proveedor,   -- quedará NULL si no hay proveedor
+	NULL AS descripcion
+	FROM
+	(
+	SELECT nombre_consorcio, 'BANCARIOS' AS tipo_gasto, bancarios AS importe, mes FROM #TempServicios
+	UNION ALL
+	SELECT nombre_consorcio, 'LIMPIEZA', limpieza, mes FROM #TempServicios
+	UNION ALL
+	SELECT nombre_consorcio, 'ADMINISTRACION', administracion, mes FROM #TempServicios
+	UNION ALL
+	SELECT nombre_consorcio, 'SEGUROS', seguros, mes FROM #TempServicios
+	UNION ALL
+	SELECT nombre_consorcio, 'GASTOS GENERALES', gastos_generales, mes FROM #TempServicios
+	UNION ALL
+	SELECT nombre_consorcio, 'SERVICIOS AGUA', servicios_agua, mes FROM #TempServicios
+	UNION ALL
+	SELECT nombre_consorcio, 'SERVICIOS LUZ', servicio_luz, mes FROM #TempServicios
+	) gs
+	INNER JOIN @TipoGastoMap m ON gs.tipo_gasto = m.json_tipo
+	INNER JOIN Consorcio.Consorcio c 
+	ON LOWER(LTRIM(RTRIM(gs.nombre_consorcio))) = LOWER(LTRIM(RTRIM(c.nombre)))
+	LEFT JOIN Consorcio.Proveedor p 
+	ON p.id_consorcio = c.id_consorcio 
+	AND LOWER(LTRIM(RTRIM(p.tipo))) = LOWER(LTRIM(RTRIM(m.prov_tipo)))
+	WHERE gs.importe>0;
+
 END;
 GO
 
