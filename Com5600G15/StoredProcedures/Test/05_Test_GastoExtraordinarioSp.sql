@@ -34,6 +34,7 @@ EXEC Pago.CrearGastoExtraordinario
     @id_consorcio = 1,
     @detalle = 'Reparación de ascensor',
     @importe = 150000.00,
+    @importe_total = 150000.00,
     @fecha = '2025-01-15',
     @pago_cuotas = 0,
     @id_gasto = @id_ge1 OUTPUT;
@@ -45,6 +46,7 @@ EXEC Pago.CrearGastoExtraordinario
     @id_consorcio = 1,
     @detalle = 'Pintura de fachada - Cuota 1',
     @importe = 50000.00,
+    @importe_total = 300000.00,
     @fecha = '2025-02-01',
     @pago_cuotas = 1,
     @nro_cuota = 1,
@@ -57,6 +59,7 @@ EXEC Pago.CrearGastoExtraordinario
     @id_consorcio = 1,
     @detalle = 'Impermeabilización de terraza',
     @importe = 85000.00,
+    @importe_total = 85000.00,
     @fecha = '2025-03-10',
     @pago_cuotas = 0,
     @id_gasto = @id_ge3 OUTPUT;
@@ -68,6 +71,7 @@ EXEC Pago.CrearGastoExtraordinario
     @id_consorcio = 99999,
     @detalle = 'Gasto de prueba',
     @importe = 10000.00,
+    @importe_total = 10000.00,
     @fecha = '2025-01-01',
     @id_gasto = @id_ge_error1 OUTPUT;
 GO
@@ -78,6 +82,7 @@ EXEC Pago.CrearGastoExtraordinario
     @id_consorcio = 1,
     @detalle = 'Gasto inválido',
     @importe = 0,
+    @importe_total = 0,
     @fecha = '2025-01-01',
     @id_gasto = @id_ge_error2 OUTPUT;
 GO
@@ -88,6 +93,7 @@ EXEC Pago.CrearGastoExtraordinario
     @id_consorcio = 1,
     @detalle = 'Gasto inválido',
     @importe = -5000.00,
+    @importe_total = -5000.00,
     @fecha = '2025-01-01',
     @id_gasto = @id_ge_error3 OUTPUT;
 GO
@@ -98,6 +104,7 @@ EXEC Pago.CrearGastoExtraordinario
     @id_consorcio = 1,
     @detalle = 'Gasto con cuotas incompleto',
     @importe = 20000.00,
+    @importe_total = 60000.00,
     @fecha = '2025-01-01',
     @pago_cuotas = 1,
     @total_cuotas = 3,
@@ -110,6 +117,7 @@ EXEC Pago.CrearGastoExtraordinario
     @id_consorcio = 1,
     @detalle = 'Gasto con cuotas inválidas',
     @importe = 20000.00,
+    @importe_total = 80000.00,
     @fecha = '2025-01-01',
     @pago_cuotas = 1,
     @nro_cuota = 8,
@@ -123,6 +131,7 @@ EXEC Pago.CrearGastoExtraordinario
     @id_consorcio = 1,
     @detalle = 'Gasto con nro cuota inválido',
     @importe = 20000.00,
+    @importe_total = 100000.00,
     @fecha = '2025-01-01',
     @pago_cuotas = 1,
     @nro_cuota = 0,
@@ -130,12 +139,39 @@ EXEC Pago.CrearGastoExtraordinario
     @id_gasto = @id_ge_error6 OUTPUT;
 GO
 
+--ERROR: importe_total <= importe cuando hay cuotas
+DECLARE @id_ge_error7 INT;
+EXEC Pago.CrearGastoExtraordinario
+    @id_consorcio = 1,
+    @detalle = 'Pintura - Cuota invalida',
+    @importe = 50000.00,
+    @importe_total = 50000.00,
+    @fecha = '2025-01-01',
+    @pago_cuotas = 1,
+    @nro_cuota = 1,
+    @total_cuotas = 5,
+    @id_gasto = @id_ge_error7 OUTPUT;
+GO
+
+--ERROR: importe_total <> importe cuando NO hay cuotas
+DECLARE @id_ge_error8 INT;
+EXEC Pago.CrearGastoExtraordinario
+    @id_consorcio = 1,
+    @detalle = 'Reparacion invalida',
+    @importe = 100000.00,
+    @importe_total = 120000.00,
+    @fecha = '2025-01-01',
+    @pago_cuotas = 0,
+    @id_gasto = @id_ge_error8 OUTPUT;
+GO
+    
 -- MODIFICAR GASTO EXTRAORDINARIO
 -- MODIFICACION EXITOSA
 EXEC Pago.ModificarGastoExtraordinario
     @id_gasto = 1,
     @detalle = 'Reparación de ascensor - ACTUALIZADO',
     @importe = 175000.00,
+    @importe_total = 175000.00,
     @fecha = '2025-01-20',
     @pago_cuotas = 0;
 GO
@@ -145,6 +181,7 @@ EXEC Pago.ModificarGastoExtraordinario
     @id_gasto = 3,
     @detalle = 'Impermeabilización de terraza - En cuotas',
     @importe = 85000.00,
+    @importe_total = 340000.00,
     @fecha = '2025-03-10',
     @pago_cuotas = 1,
     @nro_cuota = 1,
@@ -156,6 +193,7 @@ EXEC Pago.ModificarGastoExtraordinario
     @id_gasto = 99999,
     @detalle = 'Gasto inexistente',
     @importe = 10000.00,
+    @importe_total = 10000.00,
     @fecha = '2025-01-01',
     @pago_cuotas = 0;
 GO
@@ -165,6 +203,7 @@ EXEC Pago.ModificarGastoExtraordinario
     @id_gasto = 1,
     @detalle = 'Gasto con importe inválido',
     @importe = -1000.00,
+    @importe_total = -1000.00,
     @fecha = '2025-01-01',
     @pago_cuotas = 0;
 GO
@@ -174,6 +213,7 @@ EXEC Pago.ModificarGastoExtraordinario
     @id_gasto = 2,
     @detalle = 'Gasto con cuotas inválidas',
     @importe = 50000.00,
+    @importe_total = 300000.00,
     @fecha = '2025-02-01',
     @pago_cuotas = 1,
     @nro_cuota = 10,
