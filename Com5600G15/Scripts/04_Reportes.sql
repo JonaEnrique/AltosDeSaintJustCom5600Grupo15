@@ -145,6 +145,25 @@ EXEC Reporte.sp_reporte_recaudacion_mes_depto
      @fecha_hasta = '2024-12-31';
 
 --------------------------------------------------------------------------------
+--REPORTE 3
+--------------------------------------------------------------------------------
+/*NOTA: Este reporte calcula la recaudacion total ESPERADA (no real) segun su procedencia*/
+CREATE OR ALTER PROCEDURE Reporte.sp_reporte_recaudacion_segun_procedencia
+AS
+BEGIN
+SELECT
+    FORMAT(p.fecha, 'yyyy-MM') AS Periodo,
+    SUM(p.expensas_ordinarias) AS TotalOrdinario,
+    SUM(p.expensas_extraordinarias) AS TotalExtraordinario,
+    SUM(p.intereses) AS TotalIntereses,
+    SUM(p.total_a_pagar) AS TotalAPagar
+FROM Pago.Prorrateo AS p
+GROUP BY FORMAT(p.fecha, 'yyyy-MM')
+ORDER BY Periodo;
+END;
+GO
+
+--------------------------------------------------------------------------------
 --REPORTE 4
 --------------------------------------------------------------------------------
 
