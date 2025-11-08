@@ -6,9 +6,9 @@
     - Integrantes:
     - Jonathan Enrique
     - Ariel De Brito	
-    - Franco P閞ez
+    - Franco P茅rez
     - Cristian Vergara
-    - Consigna: Generar los procedimientos almacenados (stored procedures) de inserci髇, modificaci髇 y eliminaci髇 para cada tabla.
+    - Consigna: Generar los procedimientos almacenados (stored procedures) de inserci贸n, modificaci贸n y eliminaci贸n para cada tabla.
     ---------------------------------------------------------------------
 */
 
@@ -21,7 +21,6 @@ CREATE OR ALTER PROCEDURE Pago.CrearPagoAsociado
     @id_unidad INT,
     @fecha DATE,
     @cvu_cbu VARCHAR(25),
-    @codigo_cuenta INT,
     @importe DECIMAL(10,2),
     @id_expensa INT OUTPUT
 AS
@@ -44,23 +43,17 @@ BEGIN
     IF @fecha > CAST(SYSDATETIME() AS DATE)
         THROW 51000, 'La fecha del pago no puede ser futura', 1;
     
-    -- Validar que el codigo de cuenta sea positivo
-    IF @codigo_cuenta <= 0
-        THROW 51000, 'El codigo de cuenta debe ser mayor a 0', 1;
-    
-    -- Inserci髇
+    -- Inserci贸n
     INSERT INTO Pago.PagoAsociado (
         id_unidad,
         fecha,
         cvu_cbu,
-        codigo_cuenta,
         importe
     )
     VALUES (
         @id_unidad,
         @fecha,
         @cvu_cbu,
-        @codigo_cuenta,
         @importe
     );
     
@@ -76,7 +69,6 @@ CREATE OR ALTER PROCEDURE Pago.ModificarPagoAsociado
     @id_unidad INT,
     @fecha DATE,
     @cvu_cbu VARCHAR(25),
-    @codigo_cuenta INT,
     @importe DECIMAL(10,2)
 AS
 BEGIN
@@ -100,24 +92,17 @@ BEGIN
     
     -- Validar que la fecha no sea futura
     IF @fecha > CAST(SYSDATETIME() AS DATE)
-        THROW 51000, 'La fecha del pago no puede ser futura', 1;
-    
-    -- Validar que el codigo de cuenta sea positivo
-    IF @codigo_cuenta <= 0
-        THROW 51000, 'El codigo de cuenta debe ser mayor a 0', 1;
-    
-    -- Actualizaci髇
+        THROW 51000, 'La fecha del pago no puede ser futura', 1;    
+    -- Actualizaci贸n
     UPDATE Pago.PagoAsociado
     SET
         id_unidad = @id_unidad,
         fecha = @fecha,
         cvu_cbu = @cvu_cbu,
-        codigo_cuenta = @codigo_cuenta,
         importe = @importe
     WHERE id_expensa = @id_expensa;
 END
 GO
-
 -- =============================================
 -- Eliminar PagoAsociado
 -- =============================================
@@ -131,7 +116,7 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM Pago.PagoAsociado WHERE id_expensa = @id_expensa)
         THROW 51000, 'No existe un pago asociado con ese ID', 1;
     
-    -- Borrado f韘ico (no tiene tablas dependientes)
+    -- Borrado f铆sico (no tiene tablas dependientes)
     DELETE FROM Pago.PagoAsociado
     WHERE id_expensa = @id_expensa;
 END
