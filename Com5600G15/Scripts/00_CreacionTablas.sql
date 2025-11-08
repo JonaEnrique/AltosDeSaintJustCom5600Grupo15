@@ -40,6 +40,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Persona')     EXEC('CREATE 
 
 -- *************** CREACIÃN DE TABLAS *************** --
 
+IF OBJECT_ID('Consorcio.ConsorcioPersonaUnidad','U')    IS NOT NULL DROP TABLE Consorcio.ConsorcioPersonaUnidad;
 IF OBJECT_ID('Consorcio.PersonaUnidad','U')    IS NOT NULL DROP TABLE Consorcio.PersonaUnidad;
 IF OBJECT_ID('Pago.PagoAsociado','U')          IS NOT NULL DROP TABLE Pago.PagoAsociado;
 IF OBJECT_ID('Pago.Prorrateo','U')            IS NOT NULL DROP TABLE Pago.Prorrateo;
@@ -81,7 +82,20 @@ CREATE TABLE Consorcio.Persona(
     apellido NVARCHAR(50) NOT NULL,
     mail     NVARCHAR(254),
     telefono VARCHAR(20),
-    cbu_cvu  VARCHAR(25) UNIQUE
+    cvu_cbu  VARCHAR(25) UNIQUE
+);
+
+CREATE TABLE Consorcio.ConsorcioPersonaUnidad(
+	id_cons_pers_uf   INT IDENTITY(1,1) PRIMARY KEY,
+    cvu_cbu  VARCHAR(25),
+    id_consorcio INT,
+    id_unidad INT,
+    mail     NVARCHAR(254),
+    piso        VARCHAR(3),
+    departamento CHAR(1),
+	CONSTRAINT fk_cons FOREIGN KEY (id_consorcio) REFERENCES Consorcio.Consorcio(id_consorcio),
+	CONSTRAINT fk_pers FOREIGN KEY (cvu_cbu) REFERENCES Consorcio.Persona(cvu_cbu),
+	CONSTRAINT fk_uf FOREIGN KEY (id_unidad) REFERENCES Consorcio.UnidadFuncional(id_unidad),
 );
 
 CREATE TABLE Consorcio.Proveedor(
@@ -166,7 +180,7 @@ CREATE TABLE Pago.PagoAsociado(
     CONSTRAINT fk_pagoasoc_unidad
       FOREIGN KEY (id_unidad) REFERENCES Consorcio.UnidadFuncional(id_unidad),
     CONSTRAINT fk_pagoasoc_persona
-      FOREIGN KEY (cvu_cbu)   REFERENCES Consorcio.Persona(cbu_cvu)
+      FOREIGN KEY (cvu_cbu)   REFERENCES Consorcio.Persona(cvu_cbu)
 );
 
 CREATE TABLE Pago.Prorrateo(
