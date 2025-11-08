@@ -85,19 +85,6 @@ CREATE TABLE Consorcio.Persona(
     cvu_cbu  VARCHAR(25) UNIQUE
 );
 
-CREATE TABLE Consorcio.ConsorcioPersonaUnidad(
-	id_cons_pers_uf   INT IDENTITY(1,1) PRIMARY KEY,
-    cvu_cbu  VARCHAR(25),
-    id_consorcio INT,
-    id_unidad INT,
-    mail     NVARCHAR(254),
-    piso        VARCHAR(3),
-    departamento CHAR(1),
-	CONSTRAINT fk_cons FOREIGN KEY (id_consorcio) REFERENCES Consorcio.Consorcio(id_consorcio),
-	CONSTRAINT fk_pers FOREIGN KEY (cvu_cbu) REFERENCES Consorcio.Persona(cvu_cbu),
-	CONSTRAINT fk_uf FOREIGN KEY (id_unidad) REFERENCES Consorcio.UnidadFuncional(id_unidad),
-);
-
 CREATE TABLE Consorcio.Proveedor(
     id_proveedor INT IDENTITY(1,1) PRIMARY KEY,
     id_consorcio INT NOT NULL,

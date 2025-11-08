@@ -18,11 +18,29 @@ GO
 EXECUTE Importacion.ImportarJSON @RutaArchivo = 'C:\ArchivosBDA\Servicios.Servicios.json'
 GO
 
+CREATE TABLE ##TmpInquilinoPropietariosDatos (
+            Nombre NVARCHAR(200),
+            Apellido NVARCHAR(200),
+            DNI NVARCHAR(50),
+            EmailPersonal NVARCHAR(254),
+            TelefonoContacto NVARCHAR(50),
+            CVU_CBU NVARCHAR(50),
+            Inquilino NVARCHAR(10)
+        );
+GO
+
+--Importar datos de inquilinos y propietarios (Corregir como pasar a la tabla en bd, y agregar sp para tabla entre uf y persona)
+EXECUTE Importacion.CargarInquilinoPropietariosDatos @RutaArchivo = 'C:\ArchivosBDA\Inquilino-propietarios-datos.csv'
+GO
+
 --Importar datos Unidad Funcional (Importar en nueva tabla, ver como poner id_consorcio en lugar del nombre)
 EXECUTE Importacion.CargarInquilinoPropietariosUF @RutaArchivo = 'C:\ArchivosBDA\Inquilino-propietarios-UF.csv'
+GO
 
---Importar datos de inquilinos y propietarios (Corregir como pasar a la tabla en bd)
-EXECUTE Importacion.CargarInquilinoPropietariosDatos @RutaArchivo = 'C:\ArchivosBDA\Inquilino-propietarios-datos.csv'
+DROP TABLE ##TmpInquilinoPropietariosDatos;
+GO
 
---Importar PagosConsorcios (Corregir)
+--Importar PagosConsorcios 
 EXECUTE Importacion.ImportarPagos @RutaCsv = 'C:\ArchivosBDA\pagos_consorcios.csv'
+GO
+
