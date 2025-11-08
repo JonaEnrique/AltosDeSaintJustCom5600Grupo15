@@ -580,7 +580,7 @@ BEGIN
 			a.cvu_cbu,
 			u.id_unidad 
 		FROM Pago.PagoAsociado a
-		INNER JOIN Consorcio.Persona p ON a.cvu_cbu=p.cbu_cvu
+		INNER JOIN Consorcio.Persona p ON a.cvu_cbu=p.cvu_cbu
 		INNER JOIN Consorcio.PersonaUnidad u ON u.dni=p.dni
 		)
 		UPDATE p

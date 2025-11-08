@@ -18,7 +18,7 @@ GO
 EXECUTE Importacion.ImportarJSON @RutaArchivo = 'C:\ArchivosBDA\Servicios.Servicios.json'
 GO
 
---Importar datos Unidad Funcional (preguntar al grupo)
+--Importar datos Unidad Funcional (Importar en nueva tabla, ver como poner id_consorcio en lugar del nombre)
 EXECUTE Importacion.CargarInquilinoPropietariosUF @RutaArchivo = 'C:\ArchivosBDA\Inquilino-propietarios-UF.csv'
 
 --Importar datos de inquilinos y propietarios (Corregir como pasar a la tabla en bd)
