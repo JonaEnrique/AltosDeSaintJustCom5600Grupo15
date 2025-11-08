@@ -93,11 +93,6 @@ BEGIN
     FOR XML PATH('Semana'), ROOT('FlujoCajaSemanal'), ELEMENTS;
 END;
 GO
-
-Reporte.sp_reporte_flujo_caja_semanal_XML
-     @id_consorcio = 1,
-     @fecha_desde = '2024-01-01',
-     @fecha_hasta = '2024-12-31';
 --------------------------------------------------------------------------------
 --REPORTE 2
 --------------------------------------------------------------------------------
@@ -136,14 +131,6 @@ BEGIN
     ORDER BY MesNumero;
 END;
 GO
-
-
--- Ejemplo de ejecución
-EXEC Reporte.sp_reporte_recaudacion_mes_depto
-     @id_consorcio = 1,
-     @fecha_desde = '2024-01-01',
-     @fecha_hasta = '2024-12-31';
-
 --------------------------------------------------------------------------------
 --REPORTE 3
 --------------------------------------------------------------------------------
@@ -176,13 +163,6 @@ BEGIN
     ORDER BY Periodo;
 END;
 GO
-
---ejemplo de ejecucion
-EXEC Reporte.sp_reporte_recaudacion_segun_procedencia
-     @nombre_consorcio = 'Torre Belgrano',
-     @fecha_desde = '2025-01-01',
-     @fecha_hasta = '2025-12-31';
-
 --------------------------------------------------------------------------------
 --REPORTE 4
 --------------------------------------------------------------------------------
@@ -262,9 +242,3 @@ BEGIN
     ORDER BY tipo, monto DESC;
 END;
 GO
-
-EXEC sp_reporte_top_ingresos_gastos
-     @id_consorcio = 2,
-     @fecha_desde = '2024-01-01',
-     @fecha_hasta = '2024-12-31',
-     @topN = 3;
