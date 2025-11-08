@@ -24,8 +24,6 @@ CREATE OR ALTER PROCEDURE Consorcio.CrearUnidadFuncional
     @m2_unidad DECIMAL(10,2),
     @m2_baulera DECIMAL(10,2) = 0,
     @m2_cochera DECIMAL(10,2) = 0,
-    @precio_cochera DECIMAL(10,2) = 0,
-    @precio_baulera DECIMAL(10,2) = 0,
     @id_unidad INT OUTPUT
 AS
 BEGIN
@@ -70,8 +68,6 @@ BEGIN
         m2_unidad,
         m2_baulera,
         m2_cochera,
-        precio_cochera,
-        precio_baulera
     )
     VALUES (
         @id_consorcio,
