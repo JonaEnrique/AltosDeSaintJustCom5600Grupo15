@@ -49,7 +49,7 @@ BEGIN
         -- Ejecutar el BULK INSERT
         EXEC sp_executesql @SQL;
 
-        select * from #TmpUnidadFuncional;
+        --select * from #TmpUnidadFuncional;
         -- Insertar los datos nuevos en UnidadFuncional
 		INSERT INTO Consorcio.UnidadFuncional (
 			id_consorcio,
