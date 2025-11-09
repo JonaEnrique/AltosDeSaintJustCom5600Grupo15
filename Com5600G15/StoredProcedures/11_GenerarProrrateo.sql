@@ -1,3 +1,16 @@
+/*
+    ---------------------------------------------------------------------
+    -Fecha: 21/11/2025
+    -Grupo: 15
+    -Materia: Bases de Datos Aplicada
+    - Integrantes:
+    - Jonathan Enrique
+    - Ariel De Brito	
+    - Franco Pérez
+    - Cristian Vergara
+    - Consigna: Generar los registros de prorrateo
+    ---------------------------------------------------------------------
+*/
 CREATE OR ALTER FUNCTION Consorcio.sumaOrdinarios(
     @idUnidad INT,
     @fecha DATE
