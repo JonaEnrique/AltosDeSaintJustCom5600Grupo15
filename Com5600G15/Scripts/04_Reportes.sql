@@ -558,3 +558,91 @@ EXEC Reporte.sp_reporte_top_morosos_XML
      @fecha_desde = '2024-01-01',
      @fecha_hasta = '2024-12-31',
      @topN = 3;
+
+--------------------------------------------------------------------------------
+-- REPORTE 6: Fechas de pagos y días entre pagos por Unidad Funcional
+--------------------------------------------------------------------------------
+
+CREATE OR ALTER PROCEDURE Reporte.sp_reporte_dias_entre_pagos
+    @id_consorcio INT,
+    @fecha_desde DATE,
+    @fecha_hasta DATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    --------------------------------------------------------------
+    -- Obtiene pagos ordenados por UF y fecha
+    --------------------------------------------------------------
+    ;WITH PagosOrdenados AS (
+        SELECT 
+            u.id_unidad,
+            CONCAT(u.piso, u.departamento) AS unidad,
+            p.fecha AS fecha_pago,
+            p.importe,
+            -- Obtiene la fecha del pago anterior
+            LAG(p.fecha) OVER (PARTITION BY u.id_unidad ORDER BY p.fecha) AS fecha_pago_anterior,
+            -- Calcula días entre pagos
+            DATEDIFF(DAY, 
+                LAG(p.fecha) OVER (PARTITION BY u.id_unidad ORDER BY p.fecha),
+                p.fecha
+            ) AS dias_entre_pagos,
+            -- Número de secuencia del pago
+            ROW_NUMBER() OVER (PARTITION BY u.id_unidad ORDER BY p.fecha) AS nro_pago
+        FROM Pago.PagoAsociado p
+        INNER JOIN Consorcio.UnidadFuncional u 
+            ON p.id_unidad = u.id_unidad
+        WHERE u.id_consorcio = @id_consorcio
+          AND p.fecha BETWEEN @fecha_desde AND @fecha_hasta
+    ),
+
+    --------------------------------------------------------------
+    -- Estadísticas por unidad
+    --------------------------------------------------------------
+    EstadisticasPorUnidad AS (
+        SELECT 
+            id_unidad,
+            unidad,
+            COUNT(*) AS total_pagos,
+            AVG(CAST(dias_entre_pagos AS FLOAT)) AS promedio_dias_entre_pagos,
+            MIN(dias_entre_pagos) AS min_dias,
+            MAX(dias_entre_pagos) AS max_dias
+        FROM PagosOrdenados
+        WHERE dias_entre_pagos IS NOT NULL
+        GROUP BY id_unidad, unidad
+    )
+
+    --------------------------------------------------------------
+    -- RESULTADO FINAL
+    --------------------------------------------------------------
+    SELECT 
+        po.unidad AS Unidad,
+        po.nro_pago AS NroPago,
+        CONVERT(VARCHAR(10), po.fecha_pago, 103) AS FechaPago,
+        po.importe AS ImportePagado,
+        CASE 
+            WHEN po.fecha_pago_anterior IS NULL THEN 'Primer pago'
+            ELSE CONVERT(VARCHAR(10), po.fecha_pago_anterior, 103)
+        END AS FechaPagoAnterior,
+        ISNULL(po.dias_entre_pagos, 0) AS DiasEntrePagos,
+        CASE 
+            WHEN po.dias_entre_pagos IS NULL THEN '-'
+            WHEN po.dias_entre_pagos <= 30 THEN 'Normal'
+            WHEN po.dias_entre_pagos <= 60 THEN 'Atraso Leve'
+            WHEN po.dias_entre_pagos <= 90 THEN 'Atraso Moderado'
+            ELSE 'Atraso Grave'
+        END AS EstadoPago,
+        ISNULL(CAST(est.promedio_dias_entre_pagos AS DECIMAL(10,2)), 0) AS PromedioUnidad,
+        est.total_pagos AS TotalPagosUnidad
+    FROM PagosOrdenados po
+    LEFT JOIN EstadisticasPorUnidad est 
+        ON po.id_unidad = est.id_unidad
+    ORDER BY po.unidad, po.fecha_pago;
+END;
+GO
+
+-- Ejemplo de ejecución
+EXEC Reporte.sp_reporte_dias_entre_pagos
+     @id_consorcio = 1,
+     @fecha_desde = '2024-01-01',
+     @fecha_hasta = '2024-12-31';
