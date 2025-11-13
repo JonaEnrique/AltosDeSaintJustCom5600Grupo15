@@ -244,6 +244,97 @@ END;
 GO
 
 --------------------------------------------------------------------------------
+-- REPORTE 5: Top 3 propietarios con mayor morosidad (XML)
+--------------------------------------------------------------------------------
+
+CREATE OR ALTER PROCEDURE Reporte.sp_reporte_top_morosos_XML
+    @id_consorcio INT,
+    @fecha_desde DATE,
+    @fecha_hasta DATE,
+    @topN INT = 3
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    --------------------------------------------------------------
+    -- Calcula deuda total por propietario en el periodo
+    --------------------------------------------------------------
+    ;WITH MorosidadPorPropietario AS (
+        SELECT 
+            per.dni,
+            per.nombre,
+            per.apellido,
+            per.mail,
+            per.telefono,
+            u.id_unidad,
+            u.piso,
+            u.departamento,
+            SUM(pr.deudas + pr.intereses) AS deuda_total,
+            SUM(pr.saldo_anterior_abonado) AS saldo_pendiente_anterior,
+            COUNT(DISTINCT pr.fecha) AS meses_con_deuda
+        FROM Pago.Prorrateo pr
+        INNER JOIN Consorcio.UnidadFuncional u 
+            ON pr.id_unidad = u.id_unidad
+        INNER JOIN Consorcio.PersonaUnidad pu 
+            ON u.id_unidad = pu.id_unidad
+        INNER JOIN Consorcio.Persona per 
+            ON pu.dni = per.dni
+        WHERE u.id_consorcio = @id_consorcio
+          AND pu.rol = 'P' -- Solo propietarios
+          AND pr.fecha BETWEEN @fecha_desde AND @fecha_hasta
+          AND (pu.fecha_fin IS NULL OR pu.fecha_fin >= pr.fecha) -- Propietario activo en ese periodo
+          AND (pr.deudas > 0 OR pr.intereses > 0) -- Solo con deudas
+        GROUP BY per.dni, per.nombre, per.apellido, per.mail, per.telefono,
+                 u.id_unidad, u.piso, u.departamento
+    ),
+    
+    --------------------------------------------------------------
+    -- Top N propietarios más morosos
+    --------------------------------------------------------------
+    TopMorosos AS (
+        SELECT TOP (@topN)
+            dni,
+            nombre,
+            apellido,
+            mail,
+            telefono,
+            piso,
+            departamento,
+            deuda_total,
+            saldo_pendiente_anterior,
+            meses_con_deuda,
+            RANK() OVER (ORDER BY deuda_total DESC) AS ranking
+        FROM MorosidadPorPropietario
+        ORDER BY deuda_total DESC
+    )
+
+    --------------------------------------------------------------
+    -- RESULTADO EN XML
+    --------------------------------------------------------------
+    SELECT 
+        ranking AS [@Ranking],
+        dni AS [DatosContacto/DNI],
+        nombre AS [DatosContacto/Nombre],
+        apellido AS [DatosContacto/Apellido],
+        ISNULL(mail, 'No registrado') AS [DatosContacto/Email],
+        ISNULL(telefono, 'No registrado') AS [DatosContacto/Telefono],
+        CONCAT(piso, departamento) AS [Unidad],
+        deuda_total AS [DeudaTotal],
+        saldo_pendiente_anterior AS [SaldoPendienteAnterior],
+        meses_con_deuda AS [MesesConDeuda]
+    FROM TopMorosos
+    ORDER BY ranking
+    FOR XML PATH('Propietario'), ROOT('PropietariosMorosos'), ELEMENTS;
+END;
+GO
+
+-- Ejemplo de ejecución
+EXEC Reporte.sp_reporte_top_morosos_XML
+     @id_consorcio = 1,
+     @fecha_desde = '2024-01-01',
+     @fecha_hasta = '2024-12-31',
+     @topN = 3;
+--------------------------------------------------------------------------------
 -- REPORTE 6: Fechas de pagos y días entre pagos por Unidad Funcional
 --------------------------------------------------------------------------------
 
