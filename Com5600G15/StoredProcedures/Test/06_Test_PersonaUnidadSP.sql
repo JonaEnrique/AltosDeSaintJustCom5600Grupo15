@@ -1,6 +1,6 @@
 /*
     ---------------------------------------------------------------------
-    -Fecha: 21/11/2025
+    -Fecha: 02/11/2025
     -Grupo: 15
     -Materia: Bases de Datos Aplicada
     - Integrantes:
@@ -11,179 +11,150 @@
     -Script: PRUEBAS Stored Procedures de modificacion de tablas
     ---------------------------------------------------------------------
 */
-
 USE Com5600G15
 GO
 
 -------<<<<<<<TABLA PERSONA UNIDAD>>>>>>>-------
 
---PREPARACION (Crear registros en Persona Y UnidadFuncional)
-EXEC Consorcio.CrearPersona 
-    @dni = 12345678,
-    @nombre = N'Juan',
-    @apellido = N'Perez',
-    @mail = N'juan.perez@email.com',
-    @telefono = '1111-1111',
-    @cbu_cvu = '0000000000000000000001';
+-- PREPARACION: Crear datos necesarios
+-- Crear persona
+INSERT INTO Consorcio.Persona (dni, nombre, apellido, mail, telefono, cvu_cbu)
+VALUES (12345678, 'Juan', 'Pérez', 'juan.perez@mail.com', '1122334455', '0000003100012345678901');
 GO
 
-EXEC Consorcio.CrearPersona 
-    @dni = 23456789,
-    @nombre = N'Ana',
-    @apellido = N'Garcia',
-    @mail = N'ana.garcia@email.com',
-    @telefono = '2222-2222',
-    @cbu_cvu = '0000000000000000000002';
+INSERT INTO Consorcio.Persona (dni, nombre, apellido, mail, telefono, cvu_cbu)
+VALUES (87654321, 'María', 'González', 'maria.gonzalez@mail.com', '1198765432', '0000003100087654321098');
 GO
 
-DECLARE @id_unidad1 INT;
-DECLARE @id_unidad2 INT;
-DECLARE @id_unidad3 INT;
-DECLARE @id_consorcio INT;
+INSERT INTO Consorcio.Persona (dni, nombre, apellido, mail, telefono)
+VALUES (11223344, 'Carlos', 'López', 'carlos.lopez@mail.com', '1155667788');
+GO
 
-EXEC Consorcio.CrearConsorcio
-    @nombre = 'Consorcio Central',
-    @direccion = 'Av. Siempreviva 742',
-    @cant_unidades_funcionales = 3,
-    @m2_totales = 350.50,
-    @vencimiento1 = '2025-12-01',
-    @vencimiento2 = '2025-12-15',
-    @id_consorcio = @id_consorcio OUTPUT;
-
-
-EXEC Consorcio.CrearUnidadFuncional
-    @id_consorcio = @id_consorcio,
-    @piso = '1',
-    @departamento = 'A',
-    @coeficiente = 10.0,
-    @m2_unidad = 70.00,
-    @m2_baulera = 5.00,
-    @m2_cochera = 12.00,
-    @precio_cochera = 15000.00,
-    @precio_baulera = 5000.00,
-    @id_unidad = @id_unidad1 OUTPUT;
-
-EXEC Consorcio.CrearUnidadFuncional
-    @id_consorcio = @id_consorcio,
-    @piso = '2',
-    @departamento = 'B',
-    @coeficiente = 9.5,
-    @m2_unidad = 68.00,
-    @m2_baulera = 4.00,
-    @m2_cochera = 10.00,
-    @precio_cochera = 14000.00,
-    @precio_baulera = 4500.00,
-    @id_unidad = @id_unidad2 OUTPUT;
-
-EXEC Consorcio.CrearUnidadFuncional
-    @id_consorcio = @id_consorcio,
-    @piso = '3',
-    @departamento = 'C',
-    @coeficiente = 8.8,
-    @m2_unidad = 65.00,
-    @m2_baulera = 3.00,
-    @m2_cochera = 9.00,
-    @precio_cochera = 13000.00,
-    @precio_baulera = 4000.00,
-    @id_unidad = @id_unidad3 OUTPUT;
-
--- INSERCION 
-
--- INSERCION EXITOSA
+-- INSERCION EXITOSA - PROPIETARIO
+DECLARE @id_pu1 INT;
 EXEC Consorcio.CrearPersonaUnidad
-    @id_unidad = @id_unidad1,
+    @id_unidad = 1,
     @dni = 12345678,
     @rol = 'P',
-    @fecha_inicio = '2025-11-01',
-    @fecha_fin = NULL;
+    @fecha_inicio = '2024-01-01',
+    @id_persona_unidad = @id_pu1 OUTPUT;
+GO
 
---INSERCION EXITOSA (OTRO REGISTRO)
+-- INSERCION EXITOSA - INQUILINO CON FECHA FIN
+DECLARE @id_pu2 INT;
 EXEC Consorcio.CrearPersonaUnidad
-    @id_unidad = @id_unidad2,
-    @dni = 23456789,
+    @id_unidad = 2,
+    @dni = 87654321,
     @rol = 'I',
-    @fecha_inicio = '2025-10-15',
-    @fecha_fin = '2025-11-21';
+    @fecha_inicio = '2024-06-01',
+    @fecha_fin = '2025-06-01',
+    @id_persona_unidad = @id_pu2 OUTPUT;
+GO
 
---ERROR PERSONA INEXISTENTE
+-- INSERCION EXITOSA - INQUILINO SIN FECHA FIN
+DECLARE @id_pu3 INT;
 EXEC Consorcio.CrearPersonaUnidad
-    @id_unidad = @id_unidad1,
+    @id_unidad = 3,
+    @dni = 11223344,
+    @rol = 'I',
+    @fecha_inicio = '2025-01-01',
+    @id_persona_unidad = @id_pu3 OUTPUT;
+GO
+
+-- ERROR: UNIDAD FUNCIONAL INEXISTENTE
+DECLARE @id_pu_error1 INT;
+EXEC Consorcio.CrearPersonaUnidad
+    @id_unidad = 99999,
+    @dni = 12345678,
+    @rol = 'P',
+    @fecha_inicio = '2024-01-01',
+    @id_persona_unidad = @id_pu_error1 OUTPUT;
+GO
+
+-- ERROR: PERSONA INEXISTENTE
+DECLARE @id_pu_error2 INT;
+EXEC Consorcio.CrearPersonaUnidad
+    @id_unidad = 1,
     @dni = 99999999,
     @rol = 'P',
-    @fecha_inicio = '2025-11-01',
-    @fecha_fin = NULL;
+    @fecha_inicio = '2024-01-01',
+    @id_persona_unidad = @id_pu_error2 OUTPUT;
+GO
 
---ERROR UNIDAD FUNCIONAL INEXISTENTE
+-- ERROR: ROL INVALIDO
+DECLARE @id_pu_error3 INT;
 EXEC Consorcio.CrearPersonaUnidad
-    @id_unidad = 999,
+    @id_unidad = 1,
+    @dni = 12345678,
+    @rol = 'X',
+    @fecha_inicio = '2024-01-01',
+    @id_persona_unidad = @id_pu_error3 OUTPUT;
+GO
+
+-- ERROR: FECHA FIN ANTERIOR A FECHA INICIO
+DECLARE @id_pu_error4 INT;
+EXEC Consorcio.CrearPersonaUnidad
+    @id_unidad = 2,
+    @dni = 11223344,
+    @rol = 'I',
+    @fecha_inicio = '2025-01-01',
+    @fecha_fin = '2024-01-01',
+    @id_persona_unidad = @id_pu_error4 OUTPUT;
+GO
+
+-- ERROR: RELACION ACTIVA YA EXISTE
+DECLARE @id_pu_error5 INT;
+EXEC Consorcio.CrearPersonaUnidad
+    @id_unidad = 1,
     @dni = 12345678,
     @rol = 'P',
-    @fecha_inicio = '2025-11-01',
-    @fecha_fin = '2026-12-02';
+    @fecha_inicio = '2025-01-01',
+    @id_persona_unidad = @id_pu_error5 OUTPUT;
+GO
 
---ERROR ROL INVALIDO
-EXEC Consorcio.CrearPersonaUnidad
-    @id_unidad = @id_unidad1,
-    @dni = 12345678,
-    @rol = 'Z',
-    @fecha_inicio = '2025-11-01',
-    @fecha_fin = NULL;
-
---ERROR: FECHA FIN ANTERIOR A FECHA INICIO
-EXEC Consorcio.CrearPersonaUnidad
-    @id_unidad = @id_unidad1,
-    @dni = 12345678,
+-- MODIFICAR PERSONA UNIDAD
+-- MODIFICACION EXITOSA
+EXEC Consorcio.ModificarPersonaUnidad
+    @id_persona_unidad = 1,
     @rol = 'P',
-    @fecha_inicio = '2025-11-01',
-    @fecha_fin = '2025-10-01';
-
---MODIFICACION
---MODIFICACION EXITOSA (CAMBIO DE ROL)
-EXEC Consorcio.ModificarPersonaUnidad
-    @id_persona_unidad = 1,
-    @rol = 'I';
-
---MODIFICACION EXITOSA (AGREGAR FECHA FIN)
-EXEC Consorcio.ModificarPersonaUnidad
-    @id_persona_unidad = 1,
+    @fecha_inicio = '2024-01-01',
     @fecha_fin = '2025-12-31';
+GO
 
---MODIFICACI�N EXITOSA (CAMBIO DE UNIDAD)
+-- ERROR: ID INVALIDO
 EXEC Consorcio.ModificarPersonaUnidad
-    @id_persona_unidad = 2,
-    @id_unidad = @id_unidad3;
-
---ERROR ID_PERSONA_UNIDAD INEXISTENTE
-EXEC Consorcio.ModificarPersonaUnidad
-    @id_persona_unidad = 999,
-    @rol = 'I';
-
---ERROR ROL INVALIDO
-EXEC Consorcio.ModificarPersonaUnidad
-    @id_persona_unidad = 1,
-    @rol = 'X';
-
---ERROR PERSONA INEXISTENTE (DNI)
-EXEC Consorcio.ModificarPersonaUnidad
-    @id_persona_unidad = 1,
-    @dni = 99999999;
-
---ERROR UNIDAD FUNCIONAL INEXISTENTE
-EXEC Consorcio.ModificarPersonaUnidad
-    @id_persona_unidad = 1,
-    @id_unidad = 888;
-
---MODIFICACION EXITOSA (QUITAR FECHA FIN - DEJAR NULL)
-EXEC Consorcio.ModificarPersonaUnidad
-    @id_persona_unidad = 1,
+    @id_persona_unidad = 99999,
+    @rol = 'P',
+    @fecha_inicio = '2024-01-01',
     @fecha_fin = NULL;
+GO
 
---ELIMINACION
+-- ERROR: ROL INVALIDO
+EXEC Consorcio.ModificarPersonaUnidad
+    @id_persona_unidad = 1,
+    @rol = 'Z',
+    @fecha_inicio = '2024-01-01',
+    @fecha_fin = NULL;
+GO
 
---ELIMINACION EXITOSA
-EXEC Consorcio.EliminarPersonaUnidad
-    @id_persona_unidad = 2;
+-- ERROR: FECHA FIN ANTERIOR A FECHA INICIO
+EXEC Consorcio.ModificarPersonaUnidad
+    @id_persona_unidad = 1,
+    @rol = 'P',
+    @fecha_inicio = '2025-01-01',
+    @fecha_fin = '2024-01-01';
+GO
 
---ERROR ID_PERSONA_UNIDAD INEXISTENTE
-EXEC Consorcio.EliminarPersonaUnidad
-    @id_persona_unidad = 999;
+-- ELIMINAR PERSONA UNIDAD
+-- ERROR: ID INVALIDO
+EXEC Consorcio.EliminarPersonaUnidad @id_persona_unidad = 99999;
+GO
+
+-- ELIMINACION EXITOSA
+EXEC Consorcio.EliminarPersonaUnidad @id_persona_unidad = 3;
+GO
+
+-- MOSTRAR TABLA PERSONA UNIDAD
+SELECT * FROM Consorcio.PersonaUnidad;
+GO
+

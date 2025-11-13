@@ -30,16 +30,17 @@ GO
 	
 -- *************** CREACIÃN DE SCHEMAS *************** --
 
-IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Consorcio')  EXEC('CREATE SCHEMA Consorcio');
-IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Pago')       EXEC('CREATE SCHEMA Pago');
-IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Reporte')    EXEC('CREATE SCHEMA Reporte');
-IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Seguridad')  EXEC('CREATE SCHEMA Seguridad');
-IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Importacion')EXEC('CREATE SCHEMA Importacion');
-IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Persona')    EXEC('CREATE SCHEMA Persona');
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Consorcio')   EXEC('CREATE SCHEMA Consorcio');
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Pago')        EXEC('CREATE SCHEMA Pago');
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Reporte')     EXEC('CREATE SCHEMA Reporte');
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Seguridad')   EXEC('CREATE SCHEMA Seguridad');
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Importacion') EXEC('CREATE SCHEMA Importacion');
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name='Persona')     EXEC('CREATE SCHEMA Persona');
 
 
 -- *************** CREACIÃN DE TABLAS *************** --
 
+IF OBJECT_ID('Consorcio.ConsorcioPersonaUnidad','U')    IS NOT NULL DROP TABLE Consorcio.ConsorcioPersonaUnidad;
 IF OBJECT_ID('Consorcio.PersonaUnidad','U')    IS NOT NULL DROP TABLE Consorcio.PersonaUnidad;
 IF OBJECT_ID('Pago.PagoAsociado','U')          IS NOT NULL DROP TABLE Pago.PagoAsociado;
 IF OBJECT_ID('Pago.Prorrateo','U')            IS NOT NULL DROP TABLE Pago.Prorrateo;
@@ -71,8 +72,6 @@ CREATE TABLE Consorcio.UnidadFuncional(
     m2_unidad   DECIMAL(10,2) NOT NULL,
     m2_baulera  DECIMAL(10,2) NOT NULL DEFAULT(0),
     m2_cochera  DECIMAL(10,2) NOT NULL DEFAULT(0),
-    precio_cochera DECIMAL(10,2) NOT NULL DEFAULT(0),
-    precio_baulera DECIMAL(10,2) NOT NULL DEFAULT(0),
     CONSTRAINT fk_UF_consorcio
       FOREIGN KEY (id_consorcio) REFERENCES Consorcio.Consorcio(id_consorcio)
 );
@@ -83,7 +82,7 @@ CREATE TABLE Consorcio.Persona(
     apellido NVARCHAR(50) NOT NULL,
     mail     NVARCHAR(254),
     telefono VARCHAR(20),
-    cbu_cvu  VARCHAR(25) UNIQUE
+    cvu_cbu  VARCHAR(25) UNIQUE
 );
 
 CREATE TABLE Consorcio.Proveedor(
@@ -103,12 +102,18 @@ CREATE TABLE Pago.GastoExtraordinario(
     id_consorcio INT NOT NULL,
     detalle      VARCHAR(255) NOT NULL,
     importe      DECIMAL(10,2) NOT NULL CHECK (importe > 0),
+	importe_total DECIMAL(10,2) NOT NULL DEFAULT(0) CHECK (importe_total > 0),
     fecha        DATE NOT NULL,
     pago_cuotas  BIT  NOT NULL DEFAULT(0),
     nro_cuota    INT  NULL,
     total_cuotas INT  NULL,
     CONSTRAINT fk_gextra_consorcio
-      FOREIGN KEY (id_consorcio) REFERENCES Consorcio.Consorcio(id_consorcio)
+      FOREIGN KEY (id_consorcio) REFERENCES Consorcio.Consorcio(id_consorcio),
+	CONSTRAINT chk_importe_total_consistencia
+	CHECK (
+	    (pago_cuotas = 0 AND importe_total = importe)
+	    OR
+	    (pago_cuotas = 1 AND importe_total > importe))
 );
 
 CREATE TABLE Pago.GastoOrdinario(
@@ -118,7 +123,7 @@ CREATE TABLE Pago.GastoOrdinario(
     fecha        DATE CHECK (YEAR(fecha) > 1958 AND YEAR(fecha) <= YEAR(SYSDATETIME())),
     importe      DECIMAL(10,2) NOT NULL CHECK (importe > 0),
     nro_factura  INT NOT NULL,
-    id_proveedor INT NOT NULL,
+    id_proveedor INT,
     descripcion  VARCHAR(60),
     CONSTRAINT fk_gord_consorcio
       FOREIGN KEY (id_consorcio) REFERENCES Consorcio.Consorcio(id_consorcio),
@@ -155,15 +160,14 @@ CREATE TABLE Consorcio.PersonaUnidad(
 
 CREATE TABLE Pago.PagoAsociado(
     id_expensa     INT IDENTITY(1,1) PRIMARY KEY,
-    id_unidad      INT NOT NULL,
+    id_unidad      INT ,
     fecha          DATE NOT NULL,
-    cvu_cbu        VARCHAR(25) NOT NULL,
-    codigo_cuenta  INT NOT NULL,
+    cvu_cbu        VARCHAR(25) , --los pagos pueden ser no asociados
     importe        DECIMAL(10,2) NOT NULL CHECK (importe > 0),
     CONSTRAINT fk_pagoasoc_unidad
       FOREIGN KEY (id_unidad) REFERENCES Consorcio.UnidadFuncional(id_unidad),
     CONSTRAINT fk_pagoasoc_persona
-      FOREIGN KEY (cvu_cbu)   REFERENCES Consorcio.Persona(cbu_cvu)
+      FOREIGN KEY (cvu_cbu)   REFERENCES Consorcio.Persona(cvu_cbu)
 );
 
 CREATE TABLE Pago.Prorrateo(
@@ -174,15 +178,15 @@ CREATE TABLE Pago.Prorrateo(
     piso                     VARCHAR(5) NOT NULL,
     depto                    CHAR(1)    NOT NULL,
     nombre_propietario       VARCHAR(100),
-    precio_cocheras          DECIMAL(10,2) NOT NULL DEFAULT(0),
-    precio_bauleras          DECIMAL(10,2) NOT NULL DEFAULT(0),
-    saldo_anterior_abonado   DECIMAL(10,2) NOT NULL DEFAULT(0) CHECK (saldo_anterior_abonado >= 0),
-    pagos_recibidos          DECIMAL(10,2) NOT NULL DEFAULT(0) CHECK (pagos_recibidos >= 0),
-    deudas                   DECIMAL(10,2) NOT NULL DEFAULT(0) CHECK (deudas >= 0),
-    intereses                DECIMAL(10,2) NOT NULL DEFAULT(0) CHECK (intereses >= 0),
-    expensas_ordinarias      DECIMAL(10,2) NOT NULL DEFAULT(0) CHECK (expensas_ordinarias >= 0),
-    expensas_extraordinarias DECIMAL(10,2) NOT NULL DEFAULT(0) CHECK (expensas_extraordinarias >= 0),
-    total_a_pagar            DECIMAL(10,2) NOT NULL DEFAULT(0) CHECK (total_a_pagar >= 0),
+    precio_cocheras          DECIMAL(30,2) NOT NULL DEFAULT(0),
+    precio_bauleras          DECIMAL(30,2) NOT NULL DEFAULT(0),
+    saldo_anterior_abonado   DECIMAL(30,2) NOT NULL DEFAULT(0) CHECK (saldo_anterior_abonado >= 0),
+    pagos_recibidos          DECIMAL(30,2) NOT NULL DEFAULT(0) CHECK (pagos_recibidos >= 0),
+    deudas                   DECIMAL(30,2) NOT NULL DEFAULT(0) CHECK (deudas >= 0),
+    intereses                DECIMAL(30,2) NOT NULL DEFAULT(0) CHECK (intereses >= 0),
+    expensas_ordinarias      DECIMAL(30,2) NOT NULL DEFAULT(0) CHECK (expensas_ordinarias >= 0),
+    expensas_extraordinarias DECIMAL(30,2) NOT NULL DEFAULT(0) CHECK (expensas_extraordinarias >= 0),
+    total_a_pagar            DECIMAL(30,2) NOT NULL DEFAULT(0) CHECK (total_a_pagar >= 0),
     CONSTRAINT uq_prorrateo_unidad_fecha UNIQUE (id_unidad, fecha),
     CONSTRAINT fk_prorrateo_unidad
       FOREIGN KEY (id_unidad) REFERENCES Consorcio.UnidadFuncional(id_unidad)

@@ -49,7 +49,7 @@ BEGIN
         -- Ejecutar el BULK INSERT
         EXEC sp_executesql @SQL;
 
-        select * from #TmpUnidadFuncional;
+        --select * from #TmpUnidadFuncional;
         -- Insertar los datos nuevos en UnidadFuncional
 		INSERT INTO Consorcio.UnidadFuncional (
 			id_consorcio,
@@ -98,6 +98,44 @@ BEGIN
 END;
 GO
 
+CREATE OR ALTER FUNCTION dbo.NormalizarNumero (@num NVARCHAR(50))
+RETURNS DECIMAL(18,2)
+AS
+BEGIN
+    DECLARE @limpio NVARCHAR(50) = @num;
+
+    IF @limpio LIKE '%,%' AND @limpio LIKE '%.%' AND CHARINDEX(',', @limpio) < CHARINDEX('.', @limpio)
+	BEGIN
+        -- estilo US: 22,648.59 -> eliminar ','
+        SET @limpio = REPLACE(@limpio, ',', '');
+	END
+    ELSE IF @limpio LIKE '%.%' AND @limpio LIKE '%,%' AND CHARINDEX('.', @limpio) < CHARINDEX(',', @limpio)
+	BEGIN
+        -- estilo EU: 33.706,04 -> eliminar '.' y reemplazar ',' con '.'
+        SET @limpio = REPLACE(@limpio, '.', '');
+        SET @limpio = REPLACE(@limpio, ',', '.');
+	END
+    ELSE IF @limpio LIKE '%,%' AND CHARINDEX(',', @limpio) = LEN(@limpio)-2
+	BEGIN
+        -- por las dudas: 9.613,50 -> reemplazar ',' con '.'
+        SET @limpio = REPLACE(@limpio, ',', '.');
+	END
+    ELSE
+	BEGIN
+        SET @limpio = REPLACE(@limpio, ',', ''); -- fallback
+	END
+
+    RETURN TRY_CAST(@limpio AS DECIMAL(10,2));
+END;
+GO
+
+
+
+IF NOT EXISTS (SELECT * FROM sys.sequences WHERE name = 'Seq_Factura')
+    CREATE SEQUENCE Seq_Factura
+        START WITH 1
+        INCREMENT BY 1;
+GO
 
 CREATE OR ALTER PROCEDURE Importacion.ImportarJSON 
     @RutaArchivo NVARCHAR(255)
@@ -110,56 +148,133 @@ BEGIN
             RAISERROR('La ruta del archivo no puede estar vacía', 16, 1);
             RETURN;
         END
-            
-    CREATE TABLE ##Consorcios (
+
+	
+    CREATE TABLE #TempServicios (
         id NVARCHAR(50),
         nombre_consorcio NVARCHAR(100),
         mes NVARCHAR(20),
-        bancarios DECIMAL(18,2),
-        limpieza DECIMAL(18,2),
-        administracion DECIMAL(18,2),
-        seguros DECIMAL(18,2),
-        gastos_generales DECIMAL(18,2),
-        servicios_agua DECIMAL(18,2),
-        servicio_luz DECIMAL(18,2)
+        bancarios DECIMAL(10,2),
+        limpieza DECIMAL(10,2),
+        administracion DECIMAL(10,2),
+        seguros DECIMAL(10,2),
+        gastos_generales DECIMAL(10,2),
+        servicios_agua DECIMAL(10,2),
+        servicio_luz DECIMAL(10,2)
     );
+	
+	DECLARE @sql NVARCHAR(MAX);
+	SET @sql = 
+	N'
+	DECLARE @json NVARCHAR(MAX);
+	SELECT @json = BulkColumn
+	FROM OPENROWSET(BULK '''+ @RutaArchivo +N''' , SINGLE_CLOB) AS j;
 
-    DECLARE @sql NVARCHAR(MAX);
+	INSERT INTO #TempServicios
+	SELECT 
+		id,
+		nombre_consorcio,
+		mes,
+		dbo.NormalizarNumero(seguros) AS seguros,
+		dbo.NormalizarNumero(limpieza) AS limpieza,
+		dbo.NormalizarNumero(administracion) AS administracion,
+		dbo.NormalizarNumero(bancarios) AS bancarios,
+		dbo.NormalizarNumero(gastos_generales) AS gastos_generales,
+		dbo.NormalizarNumero(servicios_agua) AS servicios_agua,
+		dbo.NormalizarNumero(servicio_luz) AS servicio_luz
+	FROM OPENJSON(@json)
+	WITH (
+		id NVARCHAR(50) ''$._id."$oid"'',
+		nombre_consorcio NVARCHAR(200) ''$."Nombre del consorcio"'',
+		mes NVARCHAR(20) ''$.Mes'',
+		bancarios NVARCHAR(20) ''$.BANCARIOS'',
+		limpieza NVARCHAR(20) ''$.LIMPIEZA'',
+		administracion NVARCHAR(20) ''$.ADMINISTRACION'',
+		seguros NVARCHAR(20) ''$.SEGUROS'',
+		gastos_generales NVARCHAR(20) ''$."GASTOS GENERALES"'',
+		servicios_agua NVARCHAR(20) ''$."SERVICIOS PUBLICOS-Agua"'',
+		servicio_luz NVARCHAR(20) ''$."SERVICIOS PUBLICOS-Luz"''
+	);';
+	EXEC sp_executesql @sql ;
 
-    SET @sql = N'
-    INSERT INTO ##Consorcios
-    (id, nombre_consorcio, mes, bancarios, limpieza, administracion, seguros, gastos_generales, servicios_agua, servicio_luz)
-    SELECT 
-        id,
-        nombre_consorcio,
-        mes,
-        TRY_CAST(REPLACE(REPLACE(bancarios, ''.'', ''''), '','', ''.'') AS DECIMAL(18,2)),
-        TRY_CAST(REPLACE(REPLACE(limpieza, ''.'', ''''), '','', ''.'') AS DECIMAL(18,2)),
-        TRY_CAST(REPLACE(REPLACE(administracion, ''.'', ''''), '','', ''.'') AS DECIMAL(18,2)),
-        TRY_CAST(REPLACE(REPLACE(seguros, ''.'', ''''), '','', ''.'') AS DECIMAL(18,2)),
-        TRY_CAST(REPLACE(REPLACE(gastos_generales, ''.'', ''''), '','', ''.'') AS DECIMAL(18,2)),
-        TRY_CAST(REPLACE(REPLACE(servicios_agua, ''.'', ''''), '','', ''.'') AS DECIMAL(18,2)),
-        TRY_CAST(REPLACE(REPLACE(servicio_luz, ''.'', ''''), '','', ''.'') AS DECIMAL(18,2))
-    FROM OPENROWSET (
-         BULK ''' + @RutaArchivo + ''',
-         SINGLE_CLOB
-    ) AS j
-    CROSS APPLY OPENJSON(BulkColumn)
-    WITH (
-        id NVARCHAR(50) ''$._id.$oid'',
-        nombre_consorcio NVARCHAR(100) ''$.Nombre del consorcio'',
-        mes NVARCHAR(20) ''$.Mes'',
-        bancarios NVARCHAR(20) ''$.BANCARIOS'',
-        limpieza NVARCHAR(20) ''$.LIMPIEZA'',
-        administracion NVARCHAR(20) ''$.ADMINISTRACION'',
-        seguros NVARCHAR(20) ''$.SEGUROS'',
-        gastos_generales NVARCHAR(20) ''$.GASTOS GENERALES'',
-        servicios_agua NVARCHAR(20) ''$.SERVICIOS PUBLICOS-Agua'',
-        servicio_luz NVARCHAR(20) ''$.SERVICIOS PUBLICOS-Luz''
-    );
-    ';
+	DELETE #TempServicios 
+	WHERE nombre_consorcio IS NULL;
 
-    EXEC sp_executesql @sql;
+	DECLARE @TipoGastoMap TABLE (
+		json_tipo NVARCHAR(50),
+		prov_tipo NVARCHAR(50)
+	);
+
+	INSERT INTO @TipoGastoMap VALUES
+		('BANCARIOS', 'GASTOS BANCARIOS'),
+		('LIMPIEZA', 'LIMPIEZA'),
+		('ADMINISTRACION', 'ADMINISTRACION'),
+		('SEGUROS', 'SEGUROS'),
+		('GASTOS GENERALES', 'GASTOS GENERALES'),
+		('SERVICIOS AGUA', 'AGUA'),
+		('SERVICIOS LUZ', 'LUZ');
+
+	-- Opcional: tabla de meses para reemplazar CASE
+	DECLARE @Meses TABLE (nombre NVARCHAR(20), nro INT);
+	INSERT INTO @Meses(nombre, nro) VALUES
+	('enero', 1), ('febrero', 2), ('marzo', 3), ('abril', 4), 
+	('mayo', 5), ('junio', 6), ('julio', 7), ('agosto', 8),
+	('septiembre', 9), ('octubre', 10), ('noviembre', 11), ('diciembre', 12);
+
+	INSERT INTO Pago.GastoOrdinario
+	(
+		id_consorcio,
+		tipo_gasto,
+		fecha,
+		nro_factura,
+		importe,
+		id_proveedor,
+		descripcion
+	)
+	SELECT 
+		c.id_consorcio,
+		m.json_tipo AS tipo_gasto,
+		DATEFROMPARTS(YEAR(GETDATE()), ISNULL(ms.nro,1), 1) AS fecha,
+		NEXT VALUE FOR Seq_Factura,
+		gs.importe,
+		p.id_proveedor,
+		NULL AS descripcion
+	FROM
+	(
+		SELECT 
+			nombre_consorcio,
+			tipo_gasto,
+			importe,
+			mes
+		FROM
+			(SELECT 
+				 nombre_consorcio,
+				 bancarios,
+				 limpieza,
+				 administracion,
+				 seguros,
+				 gastos_generales,
+				 servicios_agua,
+				 servicio_luz,
+				 mes
+			 FROM #TempServicios
+			) AS src
+		UNPIVOT
+		(
+			importe FOR tipo_gasto IN 
+			(bancarios, limpieza, administracion, seguros, gastos_generales, servicios_agua, servicio_luz)
+		) AS gs
+	) AS gs
+	INNER JOIN @TipoGastoMap m ON gs.tipo_gasto = m.json_tipo
+	INNER JOIN Consorcio.Consorcio c 
+		ON LOWER(LTRIM(RTRIM(gs.nombre_consorcio))) = LOWER(LTRIM(RTRIM(c.nombre)))
+	LEFT JOIN Consorcio.Proveedor p 
+		ON p.id_consorcio = c.id_consorcio 
+	   AND LOWER(LTRIM(RTRIM(p.tipo))) = LOWER(LTRIM(RTRIM(m.prov_tipo)))
+	LEFT JOIN @Meses ms
+		ON LOWER(LTRIM(RTRIM(gs.mes))) = ms.nombre
+	WHERE gs.importe > 0;
+
 END;
 GO
 
@@ -175,6 +290,11 @@ CREATE PROCEDURE Importacion.ImportarConsorciosProveedores
 AS
 BEGIN
 	SET NOCOUNT ON;
+	IF @RutaExcel IS NULL OR LTRIM(RTRIM(@RutaExcel)) = ''
+    BEGIN
+        RAISERROR('La ruta del excel no puede estar vacía', 16, 1);
+        RETURN;
+    END
 	DECLARE @prevShowAdvanced INT,
 			@prevAdHoc INT;
 
@@ -223,10 +343,10 @@ BEGIN
 		SET @SQL = N'
 			INSERT INTO #TempConsorcios
 			SELECT 
-				CAST(F2 AS NVARCHAR(200)) AS F2,
-				CAST(F3 AS NVARCHAR(200)) AS F3,
-				CAST(F4 AS INT) AS F4,
-				CAST(F5 AS DECIMAL(10,2)) AS F5
+				TRY_CAST(LTRIM(RTRIM(F2)) AS NVARCHAR(200)) AS F2,
+				TRY_CAST(LTRIM(RTRIM(F3)) AS NVARCHAR(200)) AS F3,
+				TRY_CAST(LTRIM(RTRIM(F4)) AS INT) AS F4,
+				TRY_CAST(LTRIM(RTRIM(F5)) AS DECIMAL(10,2)) AS F5
 			FROM OPENROWSET(
 				''Microsoft.ACE.OLEDB.16.0'',
 				''Excel 12.0 Xml;HDR=NO;Database=' + @RutaExcel +N''',
@@ -294,20 +414,11 @@ BEGIN
     END
 
     BEGIN TRY
-        CREATE TABLE #TmpInquilinoPropietariosDatos (
-            Nombre NVARCHAR(200),
-            Apellido NVARCHAR(200),
-            DNI NVARCHAR(50),
-            EmailPersonal NVARCHAR(200),
-            TelefonoContacto NVARCHAR(50),
-            CVU_CBU NVARCHAR(50),
-            Inquilino NVARCHAR(10)
-        );
 
         DECLARE @sql NVARCHAR(MAX);
 
         SET @sql = N'
-        BULK INSERT #TmpInquilinoPropietariosDatos
+        BULK INSERT ##TmpInquilinoPropietariosDatos
         FROM ''' + @RutaArchivo + '''
         WITH (
             FIRSTROW = 2,
@@ -318,7 +429,7 @@ BEGIN
 
         EXEC sp_executesql @sql;
 
-        UPDATE #TmpInquilinoPropietariosDatos
+        UPDATE ##TmpInquilinoPropietariosDatos
         SET Nombre = LTRIM(RTRIM(Nombre)),
             Apellido = LTRIM(RTRIM(Apellido)),
             DNI = LTRIM(RTRIM(DNI)),
@@ -326,15 +437,49 @@ BEGIN
             TelefonoContacto = LTRIM(RTRIM(TelefonoContacto)),
             CVU_CBU = LTRIM(RTRIM(CVU_CBU)),
             Inquilino = LTRIM(RTRIM(Inquilino));
+		
+		WITH PersonasFiltradas AS (
+		SELECT
+		TRY_CAST(t.DNI AS INT) AS DNI,
+		TRY_CAST(t.Nombre AS NVARCHAR(50)) AS Nombre,
+		TRY_CAST(t.Apellido AS NVARCHAR(50)) AS Apellido,
+		TRY_CAST(t.EmailPersonal AS NVARCHAR(254)) AS EmailPersonal,
+		TRY_CAST(t.TelefonoContacto AS VARCHAR(20)) AS TelefonoContacto,
+		TRY_CAST(t.CVU_CBU AS VARCHAR(25)) AS CVU_CBU,
+		ROW_NUMBER() OVER (
+			PARTITION BY TRY_CAST(t.DNI AS INT)
+			ORDER BY (SELECT NULL)
+		) AS rn
+		FROM ##TmpInquilinoPropietariosDatos t
+		WHERE
+		TRY_CAST(t.DNI AS INT) IS NOT NULL
+		AND LTRIM(RTRIM(t.Nombre)) <> ''
+		AND LTRIM(RTRIM(t.Apellido)) <> ''
+		)
+		INSERT INTO Consorcio.Persona (dni, nombre, apellido, mail, telefono, cvu_cbu)
+		SELECT
+		p.DNI,
+		p.Nombre,
+		p.Apellido,
+		p.EmailPersonal,
+		p.TelefonoContacto,
+		p.CVU_CBU
+		FROM PersonasFiltradas p
+		WHERE
+		p.rn = 1  -- solo la primera aparición del DNI
+		AND NOT EXISTS (
+		SELECT 1 FROM Consorcio.Persona c WHERE c.DNI = p.DNI
+		);
 
-        DECLARE @FilasImportadas INT;
-        SELECT @FilasImportadas = COUNT(*) FROM #TmpInquilinoPropietariosDatos;
+		
+		DECLARE @FilasImportadas INT;
+        SELECT @FilasImportadas = COUNT(*) FROM ##TmpInquilinoPropietariosDatos;
 
         PRINT 'Importación completada (datos): ' + CAST(@FilasImportadas AS NVARCHAR(10)) + ' registros insertados en #TmpInquilinoPropietariosDatos.';
     END TRY
     BEGIN CATCH
-        IF OBJECT_ID('tempdb..#TmpInquilinoPropietariosDatos') IS NOT NULL
-            DROP TABLE #TmpInquilinoPropietariosDatos;
+        IF OBJECT_ID('tempdb..##TmpInquilinoPropietariosDatos') IS NOT NULL
+            DROP TABLE ##TmpInquilinoPropietariosDatos;
 
         DECLARE @ErrorMensaje NVARCHAR(4000) = ERROR_MESSAGE();
         RAISERROR('error en Importacion.CargarInquilinoPropietariosDatos: %s', 16, 1, @ErrorMensaje);
@@ -387,6 +532,20 @@ BEGIN
             piso = LTRIM(RTRIM(piso)),
             departamento = LTRIM(RTRIM(departamento));
 
+		INSERT INTO Consorcio.PersonaUnidad(id_unidad, dni, rol, fecha_inicio, fecha_fin)
+		SELECT
+			t.nroUnidadFuncional,
+			c.dni,
+			CASE 
+				WHEN p.Inquilino = 1 THEN 'P'
+				ELSE 'I'
+			END AS rol,
+			GETDATE() AS fecha_inicio,
+			GETDATE() AS fecha_fin		
+		FROM #TmpInquilinoPropietariosUF t
+		INNER JOIN ##TmpInquilinoPropietariosDatos p on t.cvu_cbu=p.cvu_cbu
+		INNER JOIN Consorcio.Persona c ON p.cvu_cbu=c.cvu_cbu
+
         DECLARE @FilasImportadas INT;
         SELECT @FilasImportadas = COUNT(*) FROM #TmpInquilinoPropietariosUF;
         PRINT 'Importación completada (UF): ' + CAST(@FilasImportadas AS NVARCHAR(10)) + ' registros insertados en #TmpInquilinoPropietariosUF.';
@@ -398,5 +557,98 @@ BEGIN
         DECLARE @ErrorMensaje NVARCHAR(4000) = ERROR_MESSAGE();
         RAISERROR('error en Importacion.CargarInquilinoPropietariosUF: %s', 16, 1, @ErrorMensaje);
 	END CATCH
+END;
+GO
+--------------------------------------------------------------------------------
+-- STORED PROCEDURE: Importacion.ImportarPagos
+--------------------------------------------------------------------------------
+CREATE OR ALTER PROCEDURE Importacion.ImportarPagos
+    @RutaCsv NVARCHAR(255)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @RutaCsv IS NULL OR LTRIM(RTRIM(@RutaCsv)) = ''
+    BEGIN
+        RAISERROR('La ruta del archivo no puede estar vacía', 16, 1);
+        RETURN;
+    END
+
+    BEGIN TRY
+
+        DECLARE @sql NVARCHAR(1000);
+		CREATE TABLE #TmpPago (
+			id			   VARCHAR(40),
+            fecha          VARCHAR(15),
+			cvu_cbu        VARCHAR(25),
+			importe        VARCHAR(40)
+        );
+		
+		SET @sql=N'BULK INSERT #TmpPago
+		FROM ''' + @RutaCsv +N'''
+		WITH (
+			FIRSTROW = 2,
+			FIELDTERMINATOR = '','',
+			ROWTERMINATOR = ''\n''
+		);';
+
+		EXEC sp_executesql @sql;
+
+		SELECT t.id AS idPagosInvalidos
+		FROM #TmpPago t
+		WHERE (NULLIF(LTRIM(RTRIM(importe)), '''') IS NULL)
+			OR (NULLIF(LTRIM(RTRIM(fecha)), '''') IS NULL)
+			OR (TRY_CAST(importe AS DECIMAL(10,2)) < 0) 
+			OR TRY_CAST(fecha AS DATE) IS NULL
+			OR LTRIM(RTRIM(t.cvu_cbu)) NOT IN (
+			SELECT LTRIM(RTRIM(cvu_cbu)) FROM Consorcio.Persona
+			);
+
+		--eliminando tuplas invalidas de pago
+		DELETE FROM #TmpPago
+		WHERE 
+			(NULLIF(LTRIM(RTRIM(importe)), '''') IS NULL)
+			OR (NULLIF(LTRIM(RTRIM(fecha)), '''') IS NULL)
+			OR (TRY_CAST(importe AS DECIMAL(10,2)) < 0) 
+			OR TRY_CAST(fecha AS DATE) IS NULL
+			OR importe IS NULL
+			OR fecha IS NULL
+			OR id IS NULL
+			OR cvu_cbu IS NULL
+			OR LTRIM(RTRIM(cvu_cbu)) NOT IN (
+			SELECT LTRIM(RTRIM(cvu_cbu)) FROM Consorcio.Persona
+			);
+			
+		INSERT INTO Pago.PagoAsociado (fecha, cvu_cbu, importe)
+		SELECT 
+		TRY_CAST(t.fecha AS DATE),
+		LTRIM(RTRIM(t.cvu_cbu)),
+		TRY_CAST(REPLACE(t.importe, '$', '') AS DECIMAL(10,2))
+		FROM #TmpPago t;
+
+		WITH pagoPersona AS (
+		SELECT 
+			a.cvu_cbu,
+			u.id_unidad 
+		FROM Pago.PagoAsociado a
+		INNER JOIN Consorcio.Persona p ON a.cvu_cbu=p.cvu_cbu
+		INNER JOIN Consorcio.PersonaUnidad u ON u.dni=p.dni
+		)
+		UPDATE p
+		SET p.id_unidad = c.id_unidad
+		FROM Pago.PagoAsociado p
+		INNER JOIN pagoPersona c ON c.cvu_cbu=p.cvu_cbu;
+
+        DECLARE @FilasImportadas INT;
+        SELECT @FilasImportadas = COUNT(*) FROM #TmpPago;
+
+        PRINT 'Importación completada (datos): ' + CAST(@FilasImportadas AS NVARCHAR(10)) + ' registros insertados en PagoAsociado.';
+    END TRY
+    BEGIN CATCH
+        IF OBJECT_ID('tempdb..#TmpPago') IS NOT NULL
+            DROP TABLE #TmpPago;
+
+        THROW;
+    END CATCH
 END;
 GO

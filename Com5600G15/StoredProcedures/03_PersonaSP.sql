@@ -20,7 +20,7 @@ CREATE OR ALTER PROCEDURE Consorcio.CrearPersona
     @apellido NVARCHAR(50),
     @mail NVARCHAR(254) = NULL,
     @telefono VARCHAR(20) = NULL,
-    @cbu_cvu VARCHAR(25) = NULL
+    @cvu_cbu VARCHAR(25) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -37,9 +37,9 @@ BEGIN
     END
     
     -- Validar que el CBU/CVU sea único si se proporciona
-    IF @cbu_cvu IS NOT NULL AND @cbu_cvu <> ''
+    IF @cvu_cbu IS NOT NULL AND @cvu_cbu <> ''
     BEGIN
-        IF EXISTS (SELECT 1 FROM Consorcio.Persona WHERE cbu_cvu = @cbu_cvu)
+        IF EXISTS (SELECT 1 FROM Consorcio.Persona WHERE cvu_cbu = @cvu_cbu)
             THROW 51000, 'Ya existe una persona con ese CBU/CVU', 1;
     END
     
@@ -54,7 +54,7 @@ BEGIN
         apellido,
         mail,
         telefono,
-        cbu_cvu
+        cvu_cbu
     )
     VALUES (
         @dni,
@@ -62,7 +62,7 @@ BEGIN
         @apellido,
         @mail,
         @telefono,
-        @cbu_cvu
+        @cvu_cbu
     );
 END
 GO
@@ -76,7 +76,7 @@ CREATE OR ALTER PROCEDURE Consorcio.ModificarPersona
     @apellido NVARCHAR(50),
     @mail NVARCHAR(254) = NULL,
     @telefono VARCHAR(20) = NULL,
-    @cbu_cvu VARCHAR(25) = NULL
+    @cvu_cbu VARCHAR(25) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -93,9 +93,9 @@ BEGIN
     END
     
     -- Validar que el CBU/CVU sea único si se proporciona
-    IF @cbu_cvu IS NOT NULL AND @cbu_cvu <> ''
+    IF @cvu_cbu IS NOT NULL AND @cvu_cbu <> ''
     BEGIN
-        IF EXISTS (SELECT 1 FROM Consorcio.Persona WHERE cbu_cvu = @cbu_cvu AND dni <> @dni)
+        IF EXISTS (SELECT 1 FROM Consorcio.Persona WHERE cvu_cbu = @cvu_cbu AND dni <> @dni)
             THROW 51000, 'Ya existe otra persona con ese CBU/CVU', 1;
     END
     
@@ -106,7 +106,7 @@ BEGIN
         apellido = @apellido,
         mail = @mail,
         telefono = @telefono,
-        cbu_cvu = @cbu_cvu
+        cvu_cbu = @cvu_cbu
     WHERE dni = @dni;
 END
 GO
@@ -131,7 +131,7 @@ BEGIN
         RETURN;
     END
     
-    IF EXISTS (SELECT 1 FROM Pago.PagoAsociado WHERE cvu_cbu = (SELECT cbu_cvu FROM Consorcio.Persona WHERE dni = @dni))
+    IF EXISTS (SELECT 1 FROM Pago.PagoAsociado WHERE cvu_cbu = (SELECT cvu_cbu FROM Consorcio.Persona WHERE dni = @dni))
     BEGIN
         PRINT 'La persona tiene pagos asociados, no se puede eliminar';
         RETURN;
