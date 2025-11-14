@@ -1,10 +1,20 @@
+/*
+    ---------------------------------------------------------------------
+    -Fecha: 27/10/2025
+    -Grupo: 15
+    -Materia: Bases de Datos Aplicada
+    - Integrantes:
+    - Jonathan Enrique
+    - Ariel De Brito
+    - Franco Perez
+    - Cristian Vergara
+    Consigna: script para ejecutar las querys del archivo de importaciones.
+    ---------------------------------------------------------------------
+*/
 USE Com5600G15
 GO
-
---script para ejecutar las querys del archivo de importaciones.
 /*NOTA: la ruta de los archivos como los nombres de los archivos en si se han elegido arbitrariamente.
 Esto puede cambiarse a gusto siempre y cuando se modifique el parametro enviado a los SP*/
-
 
 --Importar proveedores de servicios para los consorcios y consorcios
 EXECUTE Importacion.ImportarConsorciosProveedores @RutaExcel = 'C:\ArchivosBDA\datos varios.xlsx'
@@ -43,4 +53,5 @@ GO
 --Importar PagosConsorcios 
 EXECUTE Importacion.ImportarPagos @RutaCsv = 'C:\ArchivosBDA\pagos_consorcios.csv'
 GO
+
 
