@@ -548,5 +548,263 @@ SELECT * FROM Consorcio.UnidadFuncional
 SELECT * FROM Pago.GastoExtraordinario
 SELECT * FROM Pago.GastoOrdinario
 SELECT * FROM Pago.PagoAsociado
-
 */
+
+-- =============================================
+-- GENERAR PRORRATEOS (necesarios para reportes 2, 3, 5)
+-- =============================================
+
+DECLARE @id_cons INT;
+DECLARE @id_unidad INT;
+DECLARE @fecha_prorr DATE;
+DECLARE @total_ord DECIMAL(18,2);
+DECLARE @total_extra DECIMAL(18,2);
+DECLARE @m2_totales DECIMAL(18,4);
+DECLARE @m2_unit DECIMAL(18,4);
+DECLARE @m2_baul DECIMAL(18,4);
+DECLARE @m2_coch DECIMAL(18,4);
+DECLARE @porcentaje DECIMAL(18,4);
+DECLARE @monto_ord DECIMAL(18,2);
+DECLARE @monto_extra DECIMAL(18,2);
+DECLARE @piso VARCHAR(3);
+DECLARE @depto CHAR(1);
+DECLARE @nombre_prop NVARCHAR(100);
+
+-- Cursor para cada consorcio
+DECLARE cur_cons CURSOR FOR
+SELECT id_consorcio, m2_totales FROM Consorcio.Consorcio;
+
+OPEN cur_cons;
+FETCH NEXT FROM cur_cons INTO @id_cons, @m2_totales;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    -- Para cada mes: agosto, septiembre, octubre 2025
+    SET @fecha_prorr = '2025-08-01';
+    
+    WHILE @fecha_prorr <= '2025-10-01'
+    BEGIN
+        -- Calcular total de gastos ordinarios del mes
+        SELECT @total_ord = ISNULL(SUM(importe), 0)
+        FROM Pago.GastoOrdinario
+        WHERE id_consorcio = @id_cons
+        AND MONTH(fecha) = MONTH(@fecha_prorr)
+        AND YEAR(fecha) = YEAR(@fecha_prorr);
+        
+        -- Calcular total de gastos extraordinarios del mes
+        SELECT @total_extra = ISNULL(SUM(importe_total), 0)
+        FROM Pago.GastoExtraordinario
+        WHERE id_consorcio = @id_cons
+        AND MONTH(fecha) = MONTH(@fecha_prorr)
+        AND YEAR(fecha) = YEAR(@fecha_prorr);
+        
+        -- Cursor para cada unidad del consorcio
+        DECLARE cur_units CURSOR FOR
+        SELECT id_unidad, piso, departamento, m2_unidad, 
+               ISNULL(m2_baulera,0), ISNULL(m2_cochera,0)
+        FROM Consorcio.UnidadFuncional
+        WHERE id_consorcio = @id_cons;
+        
+        OPEN cur_units;
+        FETCH NEXT FROM cur_units INTO @id_unidad, @piso, @depto, @m2_unit, @m2_baul, @m2_coch;
+        
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            -- Calcular porcentaje según m2
+            SET @m2_unit = @m2_unit + @m2_baul + @m2_coch;
+            SET @porcentaje = (@m2_unit / @m2_totales) * 100;
+            
+            -- Calcular montos proporcionales
+            SET @monto_ord = (@m2_unit / @m2_totales) * @total_ord;
+            SET @monto_extra = (@m2_unit / @m2_totales) * @total_extra;
+            
+            -- Obtener nombre del propietario
+            SELECT TOP 1 @nombre_prop = CONCAT(p.nombre, ' ', p.apellido)
+            FROM Consorcio.Persona p
+            JOIN Consorcio.PersonaUnidad pu ON p.dni = pu.dni
+            WHERE pu.id_unidad = @id_unidad AND pu.rol = 'P';
+            
+            -- Insertar prorrateo
+            INSERT INTO Pago.Prorrateo (
+                id_unidad, fecha, porcentaje_m2, piso, depto, nombre_propietario,
+                precio_cocheras, precio_bauleras, saldo_anterior_abonado, 
+                pagos_recibidos, deudas, intereses, 
+                expensas_ordinarias, expensas_extraordinarias, total_a_pagar
+            )
+            VALUES (
+                @id_unidad, @fecha_prorr, @porcentaje, @piso, @depto, @nombre_prop,
+                CASE WHEN @m2_coch > 0 THEN 500.00 ELSE 0 END,
+                CASE WHEN @m2_baul > 0 THEN 200.00 ELSE 0 END,
+                0, 0, 0, 0,
+                @monto_ord, @monto_extra, 
+                @monto_ord + @monto_extra
+            );
+            
+            FETCH NEXT FROM cur_units INTO @id_unidad, @piso, @depto, @m2_unit, @m2_baul, @m2_coch;
+        END;
+        
+        CLOSE cur_units;
+        DEALLOCATE cur_units;
+        
+        SET @fecha_prorr = DATEADD(MONTH, 1, @fecha_prorr);
+    END;
+    
+    FETCH NEXT FROM cur_cons INTO @id_cons, @m2_totales;
+END;
+
+CLOSE cur_cons;
+DEALLOCATE cur_cons;
+
+-- =============================================
+-- GENERAR PAGOS ASOCIADOS PARA AGOSTO Y SEPTIEMBRE
+-- (necesarios para reportes 1, 2, 4, 6)
+-- =============================================
+
+DECLARE @fecha_pago DATE;
+DECLARE @importe_pagar DECIMAL(18,2);
+DECLARE @cvu VARCHAR(25);
+DECLARE @id_expensa INT;
+
+-- AGOSTO 2025 - Todos pagan en fecha
+SET @fecha_pago = '2025-08-10';
+
+DECLARE cur_pago_ago CURSOR FOR
+SELECT pr.id_unidad, pr.total_a_pagar, p.cvu_cbu
+FROM Pago.Prorrateo pr
+JOIN Consorcio.PersonaUnidad pu ON pr.id_unidad = pu.id_unidad
+JOIN Consorcio.Persona p ON pu.dni = p.dni
+WHERE pr.fecha = '2025-08-01' AND pu.rol = 'P';
+
+OPEN cur_pago_ago;
+FETCH NEXT FROM cur_pago_ago INTO @id_unidad, @importe_pagar, @cvu;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    EXEC Pago.CrearPagoAsociado 
+        @id_unidad = @id_unidad,
+        @fecha = @fecha_pago,
+        @cvu_cbu = @cvu,
+        @importe = @importe_pagar,
+        @id_expensa = @id_expensa OUTPUT;
+    
+    FETCH NEXT FROM cur_pago_ago INTO @id_unidad, @importe_pagar, @cvu;
+END;
+
+CLOSE cur_pago_ago;
+DEALLOCATE cur_pago_ago;
+
+-- SEPTIEMBRE 2025 - Algunos con atraso leve
+SET @fecha_pago = '2025-09-10';
+
+DECLARE cur_pago_sep CURSOR FOR
+SELECT pr.id_unidad, pr.total_a_pagar, p.cvu_cbu
+FROM Pago.Prorrateo pr
+JOIN Consorcio.PersonaUnidad pu ON pr.id_unidad = pu.id_unidad
+JOIN Consorcio.Persona p ON pu.dni = p.dni
+WHERE pr.fecha = '2025-09-01' AND pu.rol = 'P';
+
+OPEN cur_pago_sep;
+FETCH NEXT FROM cur_pago_sep INTO @id_unidad, @importe_pagar, @cvu;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    -- Unidades 5, 15, 25 pagan con 35 días de atraso
+    IF @id_unidad IN (5, 15, 25)
+        SET @fecha_pago = '2025-10-15';
+    ELSE
+        SET @fecha_pago = '2025-09-10';
+    
+    EXEC Pago.CrearPagoAsociado 
+        @id_unidad = @id_unidad,
+        @fecha = @fecha_pago,
+        @cvu_cbu = @cvu,
+        @importe = @importe_pagar,
+        @id_expensa = @id_expensa OUTPUT;
+    
+    FETCH NEXT FROM cur_pago_sep INTO @id_unidad, @importe_pagar, @cvu;
+END;
+
+CLOSE cur_pago_sep;
+DEALLOCATE cur_pago_sep;
+
+-- =============================================
+-- GENERAR MOROSIDAD PARA REPORTE 5
+-- Actualizar prorrateos de OCTUBRE con deudas e intereses
+-- =============================================
+
+UPDATE pr
+SET 
+    deudas = pr.total_a_pagar * 2,  -- Deben 2 meses
+    intereses = (pr.total_a_pagar * 2) * 0.05  -- 5% de interés
+FROM Pago.Prorrateo pr
+WHERE pr.fecha = '2025-10-01'
+  AND pr.id_unidad IN (
+      -- Seleccionar 3-5 unidades por consorcio para morosidad
+      SELECT TOP 3 id_unidad 
+      FROM Consorcio.UnidadFuncional 
+      WHERE id_consorcio = 1
+      ORDER BY id_unidad
+      
+      UNION ALL
+      
+      SELECT TOP 3 id_unidad 
+      FROM Consorcio.UnidadFuncional 
+      WHERE id_consorcio = 2
+      ORDER BY id_unidad DESC
+      
+      UNION ALL
+      
+      SELECT TOP 3 id_unidad 
+      FROM Consorcio.UnidadFuncional 
+      WHERE id_consorcio = 3
+      ORDER BY id_unidad
+      
+      UNION ALL
+      
+      SELECT TOP 3 id_unidad 
+      FROM Consorcio.UnidadFuncional 
+      WHERE id_consorcio = 4
+      ORDER BY NEWID()  -- Aleatorio
+      
+      UNION ALL
+      
+      SELECT TOP 3 id_unidad 
+      FROM Consorcio.UnidadFuncional 
+      WHERE id_consorcio = 5
+      ORDER BY id_unidad DESC
+  );
+
+-- =============================================
+-- AGREGAR MÁS PAGOS CON DIFERENTES INTERVALOS 
+-- PARA REPORTE 6 (Días entre pagos)
+-- =============================================
+
+-- Pagos adicionales de julio con diferentes patrones
+DECLARE @fecha_julio DATE = '2025-07-10';
+
+-- Unidades que pagan regularmente cada 30 días
+DECLARE cur_pago_julio CURSOR FOR
+SELECT TOP 20 u.id_unidad, p.cvu_cbu
+FROM Consorcio.UnidadFuncional u
+JOIN Consorcio.PersonaUnidad pu ON u.id_unidad = pu.id_unidad
+JOIN Consorcio.Persona p ON pu.dni = p.dni
+WHERE pu.rol = 'P'
+ORDER BY u.id_unidad;
+
+OPEN cur_pago_julio;
+FETCH NEXT FROM cur_pago_julio INTO @id_unidad, @cvu;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    EXEC Pago.CrearPagoAsociado 
+        @id_unidad = @id_unidad,
+        @fecha = @fecha_julio,
+        @cvu_cbu = @cvu,
+        @importe = 15000,
+        @id_expensa = @id_expensa OUTPUT;
+    
+    FETCH NEXT FROM cur_pago_julio INTO @id_unidad, @cvu;
+END;
+
+CLOSE cur_pago_julio;
+DEALLOCATE cur_pago_julio;
