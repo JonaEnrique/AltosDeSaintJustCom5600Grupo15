@@ -1,6 +1,18 @@
-﻿USE Com5600G15
+/*
+    ---------------------------------------------------------------------
+    -Fecha: 27/10/2025
+    -Grupo: 15
+    -Materia: Bases de Datos Aplicada
+    - Integrantes:
+    - Jonathan Enrique
+	- Ariel De Brito
+	- Franco Perez
+	- Cristian Vergara
+	Consigna: Creacion sp de importacion de archivos
+    ---------------------------------------------------------------------
+*/
+USE Com5600G15
 GO
-
 --------------------------------------------------------------------------------
 --STORED PROCEDURE: Importacion.CargarUnidadFuncional
 --------------------------------------------------------------------------------
