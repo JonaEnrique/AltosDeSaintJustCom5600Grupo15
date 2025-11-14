@@ -54,19 +54,6 @@ EXEC Pago.CrearProrrateo
     @id_prorrateo = @id_prorr2 OUTPUT;
 GO
 
-DECLARE @id_prorr3 INT;
-EXEC Pago.CrearProrrateo
-    @id_unidad = 3,
-    @fecha = '2025-02-15',
-    @porcentaje_m2 = 4.100,
-    @piso = 'PB',
-    @depto = 'C',
-    @nombre_propietario = 'Carlos Rodríguez',
-    @expensas_ordinarias = 35000.00,
-    @total_a_pagar = 35000.00,
-    @id_prorrateo = @id_prorr3 OUTPUT;
-GO
-
 -- ERROR: UNIDAD FUNCIONAL INEXISTENTE
 DECLARE @id_prorr_error1 INT;
 EXEC Pago.CrearProrrateo
@@ -220,9 +207,10 @@ EXEC Pago.EliminarProrrateo @id_prorrateo = 99999;
 GO
 
 -- ELIMINACION EXITOSA
-EXEC Pago.EliminarProrrateo @id_prorrateo = 3;
+EXEC Pago.EliminarProrrateo @id_prorrateo = 2;
 GO
 
 -- MOSTRAR TABLA PRORRATEO
 SELECT * FROM Pago.Prorrateo;
 GO
+

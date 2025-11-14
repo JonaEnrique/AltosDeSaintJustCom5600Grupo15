@@ -16,44 +16,50 @@ GO
 
 -------<<<<<<<TABLA PAGO ASOCIADO>>>>>>>-------
 
--- PREPARACION: Crear persona con CBU/CVU
-INSERT INTO Consorcio.Persona (dni, nombre, apellido, mail, telefono, cbu_cvu)
-VALUES (12345678, 'Juan', 'Perez', 'juan.perez@mail.com', '1145678901', '0000003100010123456789');
+-- PREPARACION: Asegurar que existan datos necesarios
+-- Persona con CVU/CBU
+INSERT INTO Consorcio.Persona (dni, nombre, apellido, mail, telefono, cvu_cbu)
+VALUES (45678901, 'Ana', 'Martínez', 'ana.martinez@mail.com', '1144556677', '0000003100045678901234');
 GO
 
-INSERT INTO Consorcio.Persona (dni, nombre, apellido, mail, telefono, cbu_cvu)
-VALUES (87654321, 'Maria', 'Gomez', 'maria.gomez@mail.com', '1156789012', '0000003100010987654321');
+INSERT INTO Consorcio.Persona (dni, nombre, apellido, mail, telefono, cvu_cbu)
+VALUES (56789012, 'Luis', 'Fernández', 'luis.fernandez@mail.com', '1155667788', '0000003100056789012345');
 GO
 
--- INSERCION EXITOSA
+-- INSERCION EXITOSA - PAGO ASOCIADO A UNIDAD Y PERSONA
 DECLARE @id_pago1 INT;
 EXEC Pago.CrearPagoAsociado
     @id_unidad = 1,
     @fecha = '2025-01-15',
-    @cvu_cbu = '0000003100010123456789',
-    @codigo_cuenta = 100001,
+    @cvu_cbu = '0000003100045678901234',
     @importe = 50000.00,
     @id_expensa = @id_pago1 OUTPUT;
 GO
 
+-- INSERCION EXITOSA - PAGO ASOCIADO SOLO A UNIDAD
 DECLARE @id_pago2 INT;
 EXEC Pago.CrearPagoAsociado
     @id_unidad = 2,
     @fecha = '2025-01-20',
-    @cvu_cbu = '0000003100010987654321',
-    @codigo_cuenta = 100002,
     @importe = 75000.00,
     @id_expensa = @id_pago2 OUTPUT;
 GO
 
+-- INSERCION EXITOSA - PAGO NO ASOCIADO (NULL en ambos)
 DECLARE @id_pago3 INT;
 EXEC Pago.CrearPagoAsociado
-    @id_unidad = 1,
-    @fecha = '2025-02-10',
-    @cvu_cbu = '0000003100010123456789',
-    @codigo_cuenta = 100003,
-    @importe = 52000.00,
+    @fecha = '2025-01-25',
+    @importe = 30000.00,
     @id_expensa = @id_pago3 OUTPUT;
+GO
+
+-- INSERCION EXITOSA - PAGO ASOCIADO SOLO A PERSONA
+DECLARE @id_pago4 INT;
+EXEC Pago.CrearPagoAsociado
+    @fecha = '2025-02-01',
+    @cvu_cbu = '0000003100056789012345',
+    @importe = 45000.00,
+    @id_expensa = @id_pago4 OUTPUT;
 GO
 
 -- ERROR: UNIDAD FUNCIONAL INEXISTENTE
@@ -61,19 +67,16 @@ DECLARE @id_pago_error1 INT;
 EXEC Pago.CrearPagoAsociado
     @id_unidad = 99999,
     @fecha = '2025-01-15',
-    @cvu_cbu = '0000003100010123456789',
-    @codigo_cuenta = 100004,
     @importe = 50000.00,
     @id_expensa = @id_pago_error1 OUTPUT;
 GO
 
--- ERROR: CBU/CVU INEXISTENTE
+-- ERROR: CVU/CBU INEXISTENTE
 DECLARE @id_pago_error2 INT;
 EXEC Pago.CrearPagoAsociado
     @id_unidad = 1,
     @fecha = '2025-01-15',
     @cvu_cbu = '9999999999999999999999',
-    @codigo_cuenta = 100005,
     @importe = 50000.00,
     @id_expensa = @id_pago_error2 OUTPUT;
 GO
@@ -83,32 +86,17 @@ DECLARE @id_pago_error3 INT;
 EXEC Pago.CrearPagoAsociado
     @id_unidad = 1,
     @fecha = '2025-01-15',
-    @cvu_cbu = '0000003100010123456789',
-    @codigo_cuenta = 100006,
     @importe = 0,
     @id_expensa = @id_pago_error3 OUTPUT;
 GO
 
--- ERROR: FECHA FUTURA
+-- ERROR: IMPORTE NEGATIVO
 DECLARE @id_pago_error4 INT;
 EXEC Pago.CrearPagoAsociado
     @id_unidad = 1,
-    @fecha = '2026-12-31',
-    @cvu_cbu = '0000003100010123456789',
-    @codigo_cuenta = 100007,
-    @importe = 50000.00,
-    @id_expensa = @id_pago_error4 OUTPUT;
-GO
-
--- ERROR: CODIGO CUENTA <= 0
-DECLARE @id_pago_error5 INT;
-EXEC Pago.CrearPagoAsociado
-    @id_unidad = 1,
     @fecha = '2025-01-15',
-    @cvu_cbu = '0000003100010123456789',
-    @codigo_cuenta = -100,
-    @importe = 50000.00,
-    @id_expensa = @id_pago_error5 OUTPUT;
+    @importe = -10000.00,
+    @id_expensa = @id_pago_error4 OUTPUT;
 GO
 
 -- MODIFICAR PAGO ASOCIADO
@@ -117,28 +105,32 @@ EXEC Pago.ModificarPagoAsociado
     @id_expensa = 1,
     @id_unidad = 1,
     @fecha = '2025-01-16',
-    @cvu_cbu = '0000003100010123456789',
-    @codigo_cuenta = 100001,
+    @cvu_cbu = '0000003100045678901234',
     @importe = 55000.00;
 GO
 
--- ERROR: ID EXPENSA INVALIDO
+-- ERROR: ID INVALIDO
 EXEC Pago.ModificarPagoAsociado
     @id_expensa = 99999,
     @id_unidad = 1,
     @fecha = '2025-01-15',
-    @cvu_cbu = '0000003100010123456789',
-    @codigo_cuenta = 100001,
     @importe = 50000.00;
 GO
 
--- ERROR: UNIDAD INEXISTENTE
+-- ERROR: UNIDAD FUNCIONAL INEXISTENTE
 EXEC Pago.ModificarPagoAsociado
     @id_expensa = 1,
     @id_unidad = 99999,
     @fecha = '2025-01-15',
-    @cvu_cbu = '0000003100010123456789',
-    @codigo_cuenta = 100001,
+    @importe = 50000.00;
+GO
+
+-- ERROR: CVU/CBU INEXISTENTE
+EXEC Pago.ModificarPagoAsociado
+    @id_expensa = 1,
+    @id_unidad = 1,
+    @fecha = '2025-01-15',
+    @cvu_cbu = '9999999999999999999999',
     @importe = 50000.00;
 GO
 
@@ -147,9 +139,7 @@ EXEC Pago.ModificarPagoAsociado
     @id_expensa = 1,
     @id_unidad = 1,
     @fecha = '2025-01-15',
-    @cvu_cbu = '0000003100010123456789',
-    @codigo_cuenta = 100001,
-    @importe = -1000.00;
+    @importe = -5000.00;
 GO
 
 -- ELIMINAR PAGO ASOCIADO

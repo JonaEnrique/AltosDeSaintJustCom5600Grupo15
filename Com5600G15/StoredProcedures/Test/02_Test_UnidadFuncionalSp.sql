@@ -24,7 +24,7 @@ EXEC Consorcio.CrearConsorcio
     @cant_unidades_funcionales = 20,
     @m2_totales = 2000.00,
     @vencimiento1 = '2025-01-10',
-    @vencimiento2 = '2025-01-10 23:59:59',
+    @vencimiento2 = '2025-01-10',
     @id_consorcio = @id_consorcio_test OUTPUT;
 GO
 
@@ -38,8 +38,6 @@ EXEC Consorcio.CrearUnidadFuncional
     @m2_unidad = 85.50,
     @m2_baulera = 5.00,
     @m2_cochera = 12.00,
-    @precio_cochera = 15000.00,
-    @precio_baulera = 5000.00,
     @id_unidad = @id_uf1 OUTPUT;
 GO
 
@@ -52,8 +50,6 @@ EXEC Consorcio.CrearUnidadFuncional
     @m2_unidad = 120.00,
     @m2_baulera = 8.00,
     @m2_cochera = 15.00,
-    @precio_cochera = 20000.00,
-    @precio_baulera = 7000.00,
     @id_unidad = @id_uf2 OUTPUT;
 GO
 
@@ -111,7 +107,7 @@ EXEC Consorcio.CrearUnidadFuncional
     @id_unidad = @id_uf_error4 OUTPUT;
 GO
 
--- ERROR: PRECIO COCHERA NEGATIVO
+-- ERROR: M2_COCHERA NEGATIVO
 DECLARE @id_uf_error5 INT;
 EXEC Consorcio.CrearUnidadFuncional
     @id_consorcio = 1,
@@ -119,7 +115,7 @@ EXEC Consorcio.CrearUnidadFuncional
     @departamento = 'F',
     @coeficiente = 1.5,
     @m2_unidad = 80.00,
-    @precio_cochera = -5000.00,
+    @m2_cochera = -5.00,
     @id_unidad = @id_uf_error5 OUTPUT;
 GO
 
@@ -132,9 +128,7 @@ EXEC Consorcio.ModificarUnidadFuncional
     @coeficiente = 1.8,
     @m2_unidad = 90.00,
     @m2_baulera = 6.00,
-    @m2_cochera = 13.00,
-    @precio_cochera = 18000.00,
-    @precio_baulera = 6000.00;
+    @m2_cochera = 13.00;
 GO
 
 -- ERROR: ID INVALIDO
@@ -145,9 +139,7 @@ EXEC Consorcio.ModificarUnidadFuncional
     @coeficiente = 1.5,
     @m2_unidad = 80.00,
     @m2_baulera = 0,
-    @m2_cochera = 0,
-    @precio_cochera = 0,
-    @precio_baulera = 0;
+    @m2_cochera = 0;
 GO
 
 -- ERROR: PISO Y DEPTO YA EXISTEN EN OTRA UNIDAD
@@ -158,9 +150,7 @@ EXEC Consorcio.ModificarUnidadFuncional
     @coeficiente = 1.5,
     @m2_unidad = 80.00,
     @m2_baulera = 0,
-    @m2_cochera = 0,
-    @precio_cochera = 0,
-    @precio_baulera = 0;
+    @m2_cochera = 0;
 GO
 
 -- ERROR: COEFICIENTE <= 0
@@ -171,9 +161,7 @@ EXEC Consorcio.ModificarUnidadFuncional
     @coeficiente = -1.5,
     @m2_unidad = 80.00,
     @m2_baulera = 0,
-    @m2_cochera = 0,
-    @precio_cochera = 0,
-    @precio_baulera = 0;
+    @m2_cochera = 0;
 GO
 
 -- ELIMINAR UNIDAD FUNCIONAL

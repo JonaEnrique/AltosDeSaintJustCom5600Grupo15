@@ -1,11 +1,24 @@
+/*
+    ---------------------------------------------------------------------
+    -Fecha: 21/11/2025
+    -Grupo: 15
+    -Materia: Bases de Datos Aplicada
+    - Integrantes:
+    - Jonathan Enrique
+    - Ariel De Brito	
+    - Franco PÃ©rez
+    - Cristian Vergara
+    - Consigna: Generar los registros de prorrateo
+    ---------------------------------------------------------------------
+*/
 CREATE OR ALTER FUNCTION Consorcio.sumaOrdinarios(
     @idUnidad INT,
     @fecha DATE
 )
-RETURNS DECIMAL(10,2)
+RETURNS DECIMAL(30,2)
 AS
 BEGIN
-    DECLARE @total DECIMAL(10,2);
+    DECLARE @total DECIMAL(30,2);
     DECLARE @ultimo_prorrateo DATE;
 	DECLARE @idConsorcio INT;
 	DECLARE @coeficiente DECIMAL(4,1);
@@ -46,10 +59,10 @@ CREATE OR ALTER FUNCTION Consorcio.sumaExtraordinarios(
     @idUnidad INT,
     @fecha DATE
 )
-RETURNS DECIMAL(10,2)
+RETURNS DECIMAL(30,2)
 AS
 BEGIN
-    DECLARE @total DECIMAL(10,2);
+    DECLARE @total DECIMAL(30,2);
     DECLARE @ultimo_prorrateo DATE;
 	DECLARE @idConsorcio INT;
 	DECLARE @coeficiente DECIMAL(4,1);
@@ -121,14 +134,14 @@ CREATE OR ALTER FUNCTION Consorcio.bauleraUnidad(
     @idUnidad INT,
 	@fecha DATE
 )
-RETURNS  DECIMAL(10,2)
+RETURNS  DECIMAL(30,2)
 AS
 BEGIN
 	--gasto_baulera = expensas_ordinarias * (m2_baulera / (m2_unidad + m2_baulera + m2_cochera))
-    DECLARE @gasto_baulera DECIMAL(10,2);
-	DECLARE @m2_cochera DECIMAL(10,2);
-	DECLARE @m2_baulera DECIMAL(10,2);
-	DECLARE @m2_unidad DECIMAL(10,2);
+    DECLARE @gasto_baulera DECIMAL(30,2);
+	DECLARE @m2_cochera DECIMAL(30,2);
+	DECLARE @m2_baulera DECIMAL(30,2);
+	DECLARE @m2_unidad DECIMAL(30,2);
 
 	SELECT 
 		@m2_cochera = u.m2_cochera,
@@ -148,14 +161,14 @@ CREATE OR ALTER FUNCTION Consorcio.cocheraUnidad(
     @idUnidad INT,
 	@fecha DATE
 )
-RETURNS DECIMAL(10,2)
+RETURNS DECIMAL(30,2)
 AS
 BEGIN
 	--gasto_cochera = expensas_ordinarias * (m2_cochera / (m2_unidad + m2_baulera + m2_cochera))
-    DECLARE @gasto_cochera DECIMAL(10,2);
-	DECLARE @m2_cochera DECIMAL(10,2);
-	DECLARE @m2_baulera DECIMAL(10,2);
-	DECLARE @m2_unidad DECIMAL(10,2);
+    DECLARE @gasto_cochera DECIMAL(30,2);
+	DECLARE @m2_cochera DECIMAL(30,2);
+	DECLARE @m2_baulera DECIMAL(30,2);
+	DECLARE @m2_unidad DECIMAL(30,2);
 
 	SELECT 
 		@m2_cochera = u.m2_cochera,
@@ -174,10 +187,10 @@ GO
 CREATE OR ALTER FUNCTION Consorcio.pagosRecibidos(
     @idUnidad INT
 )
-RETURNS DECIMAL(10,2)
+RETURNS DECIMAL(30,2)
 AS
 BEGIN
-    DECLARE @pagos_recibidos DECIMAL(10,2);
+    DECLARE @pagos_recibidos DECIMAL(30,2);
     DECLARE @ultimo_prorrateo DATE;
 	DECLARE @fecha DATE = GETDATE();
     
@@ -215,13 +228,13 @@ BEGIN
 
     DECLARE @tasa DECIMAL(5,2);
 
-    -- Definir la tasa según el vencimiento
+    -- Definir la tasa segÃºn el vencimiento
     IF @vencimiento = 1
         SET @tasa = 0.02;  -- 2% primer vencimiento
     ELSE IF @vencimiento = 2
         SET @tasa = 0.05;  -- 5% segundo vencimiento
     ELSE
-        RAISERROR('Vencimiento inválido. Solo 1 o 2.', 16, 1);
+        RAISERROR('Vencimiento invÃ¡lido. Solo 1 o 2.', 16, 1);
 
     -- Actualizar solo los prorrateos de la fecha indicada con deuda pendiente
     UPDATE Pago.Prorrateo

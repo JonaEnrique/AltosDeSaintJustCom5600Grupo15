@@ -18,11 +18,11 @@ GO
 
 -- PREPARACION: Crear datos necesarios
 -- Crear persona
-INSERT INTO Consorcio.Persona (dni, nombre, apellido, mail, telefono, cbu_cvu)
+INSERT INTO Consorcio.Persona (dni, nombre, apellido, mail, telefono, cvu_cbu)
 VALUES (12345678, 'Juan', 'Pérez', 'juan.perez@mail.com', '1122334455', '0000003100012345678901');
 GO
 
-INSERT INTO Consorcio.Persona (dni, nombre, apellido, mail, telefono, cbu_cvu)
+INSERT INTO Consorcio.Persona (dni, nombre, apellido, mail, telefono, cvu_cbu)
 VALUES (87654321, 'María', 'González', 'maria.gonzalez@mail.com', '1198765432', '0000003100087654321098');
 GO
 
@@ -157,3 +157,4 @@ GO
 -- MOSTRAR TABLA PERSONA UNIDAD
 SELECT * FROM Consorcio.PersonaUnidad;
 GO
+

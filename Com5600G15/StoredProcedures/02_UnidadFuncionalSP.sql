@@ -24,8 +24,6 @@ CREATE OR ALTER PROCEDURE Consorcio.CrearUnidadFuncional
     @m2_unidad DECIMAL(10,2),
     @m2_baulera DECIMAL(10,2) = 0,
     @m2_cochera DECIMAL(10,2) = 0,
-    @precio_cochera DECIMAL(10,2) = 0,
-    @precio_baulera DECIMAL(10,2) = 0,
     @id_unidad INT OUTPUT
 AS
 BEGIN
@@ -55,12 +53,6 @@ BEGIN
     IF @m2_cochera < 0
         THROW 51000, 'Los m2 de cochera no pueden ser negativos', 1;
     
-    IF @precio_cochera < 0
-        THROW 51000, 'El precio de cochera no puede ser negativo', 1;
-    
-    IF @precio_baulera < 0
-        THROW 51000, 'El precio de baulera no puede ser negativo', 1;
-    
     -- Inserción
     INSERT INTO Consorcio.UnidadFuncional (
         id_consorcio,
@@ -69,9 +61,7 @@ BEGIN
         coeficiente,
         m2_unidad,
         m2_baulera,
-        m2_cochera,
-        precio_cochera,
-        precio_baulera
+        m2_cochera
     )
     VALUES (
         @id_consorcio,
@@ -80,9 +70,7 @@ BEGIN
         @coeficiente,
         @m2_unidad,
         @m2_baulera,
-        @m2_cochera,
-        @precio_cochera,
-        @precio_baulera
+        @m2_cochera
     );
     
     SET @id_unidad = SCOPE_IDENTITY();
@@ -99,9 +87,7 @@ CREATE OR ALTER PROCEDURE Consorcio.ModificarUnidadFuncional
     @coeficiente DECIMAL(4,1),
     @m2_unidad DECIMAL(10,2),
     @m2_baulera DECIMAL(10,2),
-    @m2_cochera DECIMAL(10,2),
-    @precio_cochera DECIMAL(10,2),
-    @precio_baulera DECIMAL(10,2)
+    @m2_cochera DECIMAL(10,2)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -131,12 +117,6 @@ BEGIN
     IF @m2_cochera < 0
         THROW 51000, 'Los m2 de cochera no pueden ser negativos', 1;
     
-    IF @precio_cochera < 0
-        THROW 51000, 'El precio de cochera no puede ser negativo', 1;
-    
-    IF @precio_baulera < 0
-        THROW 51000, 'El precio de baulera no puede ser negativo', 1;
-    
     -- Actualización
     UPDATE Consorcio.UnidadFuncional
     SET
@@ -145,9 +125,7 @@ BEGIN
         coeficiente = @coeficiente,
         m2_unidad = @m2_unidad,
         m2_baulera = @m2_baulera,
-        m2_cochera = @m2_cochera,
-        precio_cochera = @precio_cochera,
-        precio_baulera = @precio_baulera
+        m2_cochera = @m2_cochera
     WHERE id_unidad = @id_unidad;
 END
 GO
