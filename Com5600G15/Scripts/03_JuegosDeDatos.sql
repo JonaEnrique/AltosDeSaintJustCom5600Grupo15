@@ -1,10 +1,19 @@
-﻿USE Com5600G15
+/*
+    ---------------------------------------------------------------------
+    -Fecha: 27/10/2025
+    -Grupo: 15
+    -Materia: Bases de Datos Aplicada
+    - Integrantes:
+    - Jonathan Enrique
+    - Ariel De Brito
+    - Franco Perez
+    - Cristian Vergara
+    Consigna: Consigna: Insertar datos de ejemplo en la tablas de la db utilizando sus sps de creacion
+    ---------------------------------------------------------------------
+*/
+USE Com5600G15
 GO
 
--- =============================================
--- Consigna: Insertar datos de ejemplo en la tablas de la db
--- utilizando sus sps de creacion
--- =============================================
 --Consorcios
 DECLARE @id_consorcio1 INT, @id_consorcio2 INT, @id_consorcio3 INT, @id_consorcio4 INT, @id_consorcio5 INT;
 
@@ -539,4 +548,5 @@ SELECT * FROM Consorcio.UnidadFuncional
 SELECT * FROM Pago.GastoExtraordinario
 SELECT * FROM Pago.GastoOrdinario
 SELECT * FROM Pago.PagoAsociado
+
 */
