@@ -14,7 +14,7 @@
     ---------------------------------------------------------------------
 */
 --primero creamos los Login para asignar luego a los usuarios
---(Las contraseñas pueden ser cambiadas a gusto)
+--(Las contraseÃ±as pueden ser cambiadas a gusto)
 CREATE LOGIN LoginAdministrativoGeneral WITH PASSWORD = 'AdminGeneral';
 CREATE LOGIN LoginAdministrativoBancario WITH PASSWORD = 'Bancario';
 CREATE LOGIN LoginAdministrativoOperativo WITH PASSWORD = 'Operativo';
@@ -69,10 +69,10 @@ GRANT EXECUTE ON Consorcio.GenerarEstadoFinanciero TO AdministrativoOperativo;
 GRANT EXECUTE ON Consorcio.GenerarEstadoFinanciero TO Sistemas;
 
 --Prorrateo
-GRANT EXECUTE ON Reportes.calcularProrrateo TO AdministrativoGeneral;
-GRANT EXECUTE ON Reportes.calcularProrrateo TO AdministrativoBancario;
-GRANT EXECUTE ON Reportes.calcularProrrateo TO AdministrativoOperativo;
-GRANT EXECUTE ON Reportes.calcularProrrateo TO Sistemas;
+GRANT EXECUTE ON Reporte.calcularProrrateo TO AdministrativoGeneral;
+GRANT EXECUTE ON Reporte.calcularProrrateo TO AdministrativoBancario;
+GRANT EXECUTE ON Reporte.calcularProrrateo TO AdministrativoOperativo;
+GRANT EXECUTE ON Reporte.calcularProrrateo TO Sistemas;
 
 --Creamos y asignamos los usuarios para los login creados anteriormente
 CREATE USER UsuarioAdministrativoGeneral FOR LOGIN LoginAdministrativoGeneral;
@@ -98,7 +98,7 @@ GO
 --En nuestro caso, cifraremos toda la info de la tabla persona y el campo CBU_CVU de PagoAsociado
 
 /* ==========================================================
-   MODIFICACIÓN DE ESTRUCTURA DE TABLAS PARA HASHING UNIDIRECCIONAL
+   MODIFICACIÃ“N DE ESTRUCTURA DE TABLAS PARA HASHING UNIDIRECCIONAL
    Consigna: cumplir con la Ley 25.326 (AR) y el GDPR (UE),
    aplicando hashing SHA2_256 a datos personales y sensibles.
    NOTA: En este caso decidimos no eliminar los datos originales de las tablas.
@@ -179,10 +179,10 @@ GO
 --Denegamos select sobre la tabla persona al rol publico
 DENY SELECT ON Consorcio.Persona TO PUBLIC;
 --le damos permisos a los roles para que puedan ver la tabla persona protegida
-GRANT EXECUTE ON Consorcio.VerPersonasProtegidas TO AdministrativoGeneral;
-GRANT EXECUTE ON Consorcio.VerPersonasProtegidas TO AdministrativoBancario;
-GRANT EXECUTE ON Consorcio.VerPersonasProtegidas TO AdministrativoOperativo;
-GRANT EXECUTE ON Consorcio.VerPersonasProtegidas TO Sistemas;
+GRANT SELECT ON Consorcio.VerPersonasProtegidas TO AdministrativoGeneral;
+GRANT SELECT ON Consorcio.VerPersonasProtegidas TO AdministrativoBancario;
+GRANT SELECT ON Consorcio.VerPersonasProtegidas TO AdministrativoOperativo;
+GRANT SELECT ON Consorcio.VerPersonasProtegidas TO Sistemas;
 GO
 
 --Vista para enmascarar los cvu_cbu en PagoAsociado
@@ -200,10 +200,10 @@ GO
 DENY SELECT ON Pago.PagoAsociado TO PUBLIC;
 
 --le damos permisos a los roles para que puedan ver la tabla PagoAsociado protegido
-GRANT EXECUTE ON Pago.VerPagosAsociadosProtegidos TO AdministrativoGeneral;
-GRANT EXECUTE ON Pago.VerPagosAsociadosProtegidos TO AdministrativoBancario;
-GRANT EXECUTE ON Pago.VerPagosAsociadosProtegidos TO AdministrativoOperativo;
-GRANT EXECUTE ON Pago.VerPagosAsociadosProtegidos TO Sistemas;
+GRANT SELECT ON Pago.VerPagosAsociadosProtegidos TO AdministrativoGeneral;
+GRANT SELECT ON Pago.VerPagosAsociadosProtegidos TO AdministrativoBancario;
+GRANT SELECT ON Pago.VerPagosAsociadosProtegidos TO AdministrativoOperativo;
+GRANT SELECT ON Pago.VerPagosAsociadosProtegidos TO Sistemas;
 GO
 
 -- =====================
@@ -214,8 +214,8 @@ Consigna: plantear politicas de respaldo
 */
 
 /*
-Aclaracion: el enunciado dicta que "La información de cada expensa generada es de vital importancia para el negocio,
-por ello se requiere que se establezcan políticas de respaldo tanto en las ventas diarias generadas como
+Aclaracion: el enunciado dicta que "La informaciÃ³n de cada expensa generada es de vital importancia para el negocio,
+por ello se requiere que se establezcan polÃ­ticas de respaldo tanto en las ventas diarias generadas como
 en los reportes generados" asumiremos que ventas diarias es igual a PagosAsociados y reportes generados
 es igual a Prorrateo y EstadoFinanciero
 */
@@ -228,8 +228,8 @@ actualizacion frecuente. Mas especificamente:
 *Pago.GastoOrdinario
 *Pago.GastoExtraordinario
 
-Además, se incluyen las tablas Consorcio.Prorrateo y Consorcio.EstadoFinanciero como parte del respaldo
-completo semanal, dado su valor contable y de auditoría.
+AdemÃ¡s, se incluyen las tablas Consorcio.Prorrateo y Consorcio.EstadoFinanciero como parte del respaldo
+completo semanal, dado su valor contable y de auditorÃ­a.
 
 =======================
 Estrategia seleccionada
@@ -239,10 +239,10 @@ Backup completo + diferencial:
 Completo semanal: copia integra de todas las bases de datos y archivos asociados.
 Diferencial diario: copia de los datos modificados desde el ultimo respaldo completo.
 
-Programación (Schedule):
+ProgramaciÃ³n (Schedule):
 -Backup completo: todos los domingos a las 02:00 AM.
--Backup diferencial: todos los días a las 23:00 PM.
--Retencion: los respaldos diferenciales se conservan por 7 días; los completos, por 1 mes.
+-Backup diferencial: todos los dÃ­as a las 23:00 PM.
+-Retencion: los respaldos diferenciales se conservan por 7 dÃ­as; los completos, por 1 mes.
 -Ubicacion: los archivos .bak se almacenan en un servidor de respaldo dedicado y/o 
 en un almacenamiento externo seguro (NAS o servicio en la nube).
 
@@ -250,3 +250,4 @@ RPO (Recovery Point Objective)
 
 El RPO se establece en 24 horas, ya que los backup diferenciales se realizan diariamente
 */
+
