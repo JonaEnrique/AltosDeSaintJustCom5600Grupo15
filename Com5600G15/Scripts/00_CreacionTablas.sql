@@ -5,10 +5,11 @@
     -Materia: Bases de Datos Aplicada
 
     - Integrantes:
-        - Jonathan Enrique
-		- Ariel De Brito
-		- Franco Perez
-		- Cristian Vergara
+    - Jonathan Enrique
+	- Ariel De Brito
+	- Franco Perez
+	- Cristian Vergara
+	Consigna: Creacion de tablas y schemas de la base de datos
     ---------------------------------------------------------------------
 */
 
