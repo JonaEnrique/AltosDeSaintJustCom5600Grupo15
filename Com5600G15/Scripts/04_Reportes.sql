@@ -327,13 +327,6 @@ BEGIN
     FOR XML PATH('Propietario'), ROOT('PropietariosMorosos'), ELEMENTS;
 END;
 GO
-
--- Ejemplo de ejecución
-EXEC Reporte.sp_reporte_top_morosos_XML
-     @id_consorcio = 1,
-     @fecha_desde = '2024-01-01',
-     @fecha_hasta = '2024-12-31',
-     @topN = 3;
 --------------------------------------------------------------------------------
 -- REPORTE 6: Fechas de pagos y días entre pagos por Unidad Funcional
 --------------------------------------------------------------------------------
@@ -415,9 +408,3 @@ BEGIN
     ORDER BY po.unidad, po.fecha_pago;
 END;
 GO
-
--- Ejemplo de ejecución
-EXEC Reporte.sp_reporte_dias_entre_pagos
-     @id_consorcio = 1,
-     @fecha_desde = '2024-01-01',
-     @fecha_hasta = '2024-12-31';
