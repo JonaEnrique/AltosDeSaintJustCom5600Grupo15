@@ -80,7 +80,7 @@ EXEC Consorcio.CrearEstadoFinanciero
     @id_estado = @id_estado_error2 OUTPUT;
 GO
 
--- ERROR: AÑO DE FECHA INVALIDO (MENOR A 1959)
+-- ERROR: AÃ‘O DE FECHA INVALIDO (MENOR A 1959)
 DECLARE @id_estado_error3 INT;
 EXEC Consorcio.CrearEstadoFinanciero
     @id_consorcio = 1,
@@ -89,7 +89,7 @@ EXEC Consorcio.CrearEstadoFinanciero
     @id_estado = @id_estado_error3 OUTPUT;
 GO
 
--- ERROR: AÑO DE FECHA INVALIDO (MAYOR AL ACTUAL)
+-- ERROR: AÃ‘O DE FECHA INVALIDO (MAYOR AL ACTUAL)
 DECLARE @id_estado_error4 INT;
 EXEC Consorcio.CrearEstadoFinanciero
     @id_consorcio = 1,
@@ -153,7 +153,7 @@ EXEC Consorcio.ModificarEstadoFinanciero
     @saldo_cierre = 200000.00;
 GO
 
--- ERROR: FECHA CON AÑO INVALIDO
+-- ERROR: FECHA CON AÃ‘O INVALIDO
 EXEC Consorcio.ModificarEstadoFinanciero
     @id_estado = 1,
     @fecha = '1950-01-31',
