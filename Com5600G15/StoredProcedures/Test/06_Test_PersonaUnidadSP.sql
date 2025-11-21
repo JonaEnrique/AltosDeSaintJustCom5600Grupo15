@@ -19,7 +19,7 @@ GO
 -- PREPARACION: Crear datos necesarios
 -- Crear persona
 INSERT INTO Consorcio.Persona (dni, nombre, apellido, mail, telefono, cvu_cbu)
-VALUES (12345678, 'Juan', 'Pérez', 'juan.perez@mail.com', '1122334455', '0000003100012345678901');
+VALUES (22334455, 'Juan', 'Pérez', 'juan.perez@mail.com', '1122334455', '0000003100012345678901');
 GO
 
 INSERT INTO Consorcio.Persona (dni, nombre, apellido, mail, telefono, cvu_cbu)
@@ -34,7 +34,7 @@ GO
 DECLARE @id_pu1 INT;
 EXEC Consorcio.CrearPersonaUnidad
     @id_unidad = 1,
-    @dni = 12345678,
+    @dni = 22334455,
     @rol = 'P',
     @fecha_inicio = '2024-01-01',
     @id_persona_unidad = @id_pu1 OUTPUT;
@@ -54,7 +54,7 @@ GO
 -- INSERCION EXITOSA - INQUILINO SIN FECHA FIN
 DECLARE @id_pu3 INT;
 EXEC Consorcio.CrearPersonaUnidad
-    @id_unidad = 3,
+    @id_unidad = 2,
     @dni = 11223344,
     @rol = 'I',
     @fecha_inicio = '2025-01-01',
@@ -65,7 +65,7 @@ GO
 DECLARE @id_pu_error1 INT;
 EXEC Consorcio.CrearPersonaUnidad
     @id_unidad = 99999,
-    @dni = 12345678,
+    @dni = 22334455,
     @rol = 'P',
     @fecha_inicio = '2024-01-01',
     @id_persona_unidad = @id_pu_error1 OUTPUT;
@@ -85,7 +85,7 @@ GO
 DECLARE @id_pu_error3 INT;
 EXEC Consorcio.CrearPersonaUnidad
     @id_unidad = 1,
-    @dni = 12345678,
+    @dni = 22334455,
     @rol = 'X',
     @fecha_inicio = '2024-01-01',
     @id_persona_unidad = @id_pu_error3 OUTPUT;
@@ -106,7 +106,7 @@ GO
 DECLARE @id_pu_error5 INT;
 EXEC Consorcio.CrearPersonaUnidad
     @id_unidad = 1,
-    @dni = 12345678,
+    @dni = 22334455,
     @rol = 'P',
     @fecha_inicio = '2025-01-01',
     @id_persona_unidad = @id_pu_error5 OUTPUT;
@@ -157,4 +157,5 @@ GO
 -- MOSTRAR TABLA PERSONA UNIDAD
 SELECT * FROM Consorcio.PersonaUnidad;
 GO
+
 
