@@ -5,7 +5,7 @@
     - Integrantes:
     - Jonathan Enrique
     - Ariel De Brito
-    - Franco Pérez
+    - Franco PÃ©rez
     - Cristian Vergara
     - Consigna: Test Api feriados
     - API: https://api.argentinadatos.com/v1/feriados/2025
@@ -46,7 +46,7 @@ VALUES
 GO
 
 -- ============================================
--- PRUEBA 1: Consultar feriados del año
+-- PRUEBA 1: Consultar feriados del aÃ±o
 -- ============================================
 PRINT '========================================='
 PRINT 'PRUEBA 1: Consultar feriados 2025'
@@ -71,7 +71,7 @@ PRINT 'Vencimiento 1: 25/12/2025 (Navidad - Jueves)'
 EXEC Consorcio.SP_ValidarVencimiento @Fecha = '2025-12-25'
 PRINT ''
 
-PRINT 'Vencimiento 2: 01/01/2026 (Año Nuevo - Miercoles)'
+PRINT 'Vencimiento 2: 01/01/2026 (AÃ±o Nuevo - Miercoles)'
 EXEC Consorcio.SP_ValidarVencimiento @Fecha = '2026-01-01'
 PRINT ''
 
