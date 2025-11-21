@@ -5,32 +5,93 @@
     -Materia: Bases de Datos Aplicada
 
     - Integrantes:
-        - Jonathan Enrique
-		- Ariel De Brito
-		- Franco Perez
-		- Cristian Vergara
-
+    - Jonathan Enrique
+	- Ariel De Brito
+	- Franco Perez
+	- Cristian Vergara
 	 -Consigna:Cumplimiento de los requisitos de seguridad solicitados en la Entrega 7
     ---------------------------------------------------------------------
 */
---primero creamos los Login para asignar luego a los usuarios
---(Las contraseñas pueden ser cambiadas a gusto)
-CREATE LOGIN LoginAdministrativoGeneral WITH PASSWORD = 'AdminGeneral';
-CREATE LOGIN LoginAdministrativoBancario WITH PASSWORD = 'Bancario';
-CREATE LOGIN LoginAdministrativoOperativo WITH PASSWORD = 'Operativo';
-CREATE LOGIN LoginSistemas WITH PASSWORD = 'Sistemas';
 
 USE Com5600G15;
 GO
 
---Creamos los roles
+-- =========================================
+-- LIMPIEZA: Eliminar objetos si ya existen
+-- =========================================
+
+-- 1. Eliminar usuarios (dependen de roles y logins)
+IF EXISTS (SELECT * FROM sys.database_principals WHERE name = 'UsuarioAdministrativoGeneral')
+    DROP USER UsuarioAdministrativoGeneral;
+
+IF EXISTS (SELECT * FROM sys.database_principals WHERE name = 'UsuarioAdministrativoBancario')
+    DROP USER UsuarioAdministrativoBancario;
+
+IF EXISTS (SELECT * FROM sys.database_principals WHERE name = 'UsuarioAdministrativoOperativo')
+    DROP USER UsuarioAdministrativoOperativo;
+
+IF EXISTS (SELECT * FROM sys.database_principals WHERE name = 'UsuarioSistemas')
+    DROP USER UsuarioSistemas;
+
+-- 2. Eliminar roles
+IF EXISTS (SELECT * FROM sys.database_principals WHERE name = 'AdministrativoGeneral' AND type = 'R')
+    DROP ROLE AdministrativoGeneral;
+
+IF EXISTS (SELECT * FROM sys.database_principals WHERE name = 'AdministrativoBancario' AND type = 'R')
+    DROP ROLE AdministrativoBancario;
+
+IF EXISTS (SELECT * FROM sys.database_principals WHERE name = 'AdministrativoOperativo' AND type = 'R')
+    DROP ROLE AdministrativoOperativo;
+
+IF EXISTS (SELECT * FROM sys.database_principals WHERE name = 'Sistemas' AND type = 'R')
+    DROP ROLE Sistemas;
+GO
+
+-- 3. Eliminar logins (ahora en contexto master)
+USE master;
+GO
+
+IF EXISTS (SELECT * FROM sys.server_principals WHERE name = 'LoginAdministrativoGeneral')
+    DROP LOGIN LoginAdministrativoGeneral;
+
+IF EXISTS (SELECT * FROM sys.server_principals WHERE name = 'LoginAdministrativoBancario')
+    DROP LOGIN LoginAdministrativoBancario;
+
+IF EXISTS (SELECT * FROM sys.server_principals WHERE name = 'LoginAdministrativoOperativo')
+    DROP LOGIN LoginAdministrativoOperativo;
+
+IF EXISTS (SELECT * FROM sys.server_principals WHERE name = 'LoginSistemas')
+    DROP LOGIN LoginSistemas;
+GO
+
+-- =========================================
+-- CREACIÓN DE LOGINS
+-- =========================================
+--(Las contraseñas pueden ser cambiadas a gusto)
+
+CREATE LOGIN LoginAdministrativoGeneral WITH PASSWORD = 'AdminGeneral';
+CREATE LOGIN LoginAdministrativoBancario WITH PASSWORD = 'Bancario';
+CREATE LOGIN LoginAdministrativoOperativo WITH PASSWORD = 'Operativo';
+CREATE LOGIN LoginSistemas WITH PASSWORD = 'Sistemas';
+GO
+
+USE Com5600G15;
+GO
+
+-- =========================================
+-- CREACIÓN DE ROLES
+-- =========================================
+
 CREATE ROLE AdministrativoGeneral;
 CREATE ROLE AdministrativoBancario;
 CREATE ROLE AdministrativoOperativo;
 CREATE ROLE Sistemas;
 GO
 
---brindamos los roles
+-- =========================================
+-- ASIGNACIÓN DE PERMISOS A ROLES
+-- =========================================
+
 /*
 +--------------------------+------------------------------+-------------------------------------+------------------------+
 |                          |                              | Acciones                            |                        |
@@ -74,6 +135,10 @@ GRANT EXECUTE ON Reporte.calcularProrrateo TO AdministrativoBancario;
 GRANT EXECUTE ON Reporte.calcularProrrateo TO AdministrativoOperativo;
 GRANT EXECUTE ON Reporte.calcularProrrateo TO Sistemas;
 
+-- =========================================
+-- CREACIÓN DE USUARIOS Y ASIGNACIÓN A ROLES
+-- =========================================
+
 --Creamos y asignamos los usuarios para los login creados anteriormente
 CREATE USER UsuarioAdministrativoGeneral FOR LOGIN LoginAdministrativoGeneral;
 CREATE USER UsuarioAdministrativoBancario FOR LOGIN LoginAdministrativoBancario;
@@ -104,14 +169,32 @@ GO
    NOTA: En este caso decidimos no eliminar los datos originales de las tablas.
    ========================================================== */
 
--- Tabla Persona
+-- Verificar y eliminar columnas si existen en Persona
+IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Consorcio.Persona') AND name = 'dni_hash')
+    ALTER TABLE Consorcio.Persona DROP COLUMN dni_hash;
+
+IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Consorcio.Persona') AND name = 'mail_hash')
+    ALTER TABLE Consorcio.Persona DROP COLUMN mail_hash;
+
+IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Consorcio.Persona') AND name = 'telefono_hash')
+    ALTER TABLE Consorcio.Persona DROP COLUMN telefono_hash;
+
+IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Consorcio.Persona') AND name = 'cvu_cbu_hash')
+    ALTER TABLE Consorcio.Persona DROP COLUMN cvu_cbu_hash;
+
+-- Verificar y eliminar columna si existe en PagoAsociado
+IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Pago.PagoAsociado') AND name = 'cvu_cbu_hash')
+    ALTER TABLE Pago.PagoAsociado DROP COLUMN cvu_cbu_hash;
+GO
+
+-- Tabla Persona - Agregar columnas de hash
 ALTER TABLE Consorcio.Persona
 ADD dni_hash VARBINARY(64),
     mail_hash VARBINARY(64),
     telefono_hash VARBINARY(64),
     cvu_cbu_hash VARBINARY(64);
 
--- Tabla PagoAsociado
+-- Tabla PagoAsociado - Agregar columna de hash
 ALTER TABLE Pago.PagoAsociado
 ADD cvu_cbu_hash VARBINARY(64);
 GO
@@ -248,6 +331,6 @@ en un almacenamiento externo seguro (NAS o servicio en la nube).
 
 RPO (Recovery Point Objective)
 
-El RPO se establece en 24 horas, ya que los backup diferenciales se realizan diariamente
+El RPO se establece en 24 horas, ya que los backup diferenciales se realizan diariame
 */
 
