@@ -34,7 +34,7 @@ EXEC Reporte.sp_reporte_recaudacion_mes_depto
 -- REPORTE 3: Recaudación según Procedencia
 -- Consorcio Alberdi
 EXEC Reporte.sp_reporte_recaudacion_segun_procedencia
-    @nombre_consorcio = 'Alberdi',
+    @nombre_consorcio = 'Los Aromos',
     @fecha_desde = '2025-08-01',
     @fecha_hasta = '2025-10-31';
 
