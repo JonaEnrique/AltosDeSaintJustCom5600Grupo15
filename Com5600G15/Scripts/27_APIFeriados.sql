@@ -5,7 +5,7 @@
     - Integrantes:
     - Jonathan Enrique
     - Ariel De Brito
-    - Franco PÈrez
+    - Franco P√©rez
     - Cristian Vergara
     - Consigna: Uso de una API en la base de datos
     - API: https://api.argentinadatos.com/v1/feriados/2025
@@ -85,7 +85,7 @@ BEGIN
     DECLARE @Object INT
     DECLARE @Response VARCHAR(8000)
     DECLARE @HR INT
-    -- Tabla temporal en memoria para guardar los feriados del aÒo
+    -- Tabla temporal en memoria para guardar los feriados del a√±o
     DECLARE @Feriados TABLE (Fecha DATE, Nombre NVARCHAR(200))
     
     BEGIN TRY
@@ -110,7 +110,7 @@ BEGIN
         BEGIN
             DECLARE @NombreDia NVARCHAR(20) = DATENAME(WEEKDAY, @NuevaFecha)
             
-            IF @NombreDia IN ('Saturday', 'Sunday', 's·bado', 'domingo') 
+            IF @NombreDia IN ('Saturday', 'Sunday', 's√°bado', 'domingo') 
                OR EXISTS (SELECT 1 FROM @Feriados WHERE Fecha = @NuevaFecha)
             BEGIN
                 SET @NuevaFecha = DATEADD(DAY, 1, @NuevaFecha)
