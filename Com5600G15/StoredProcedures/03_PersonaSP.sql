@@ -11,6 +11,8 @@
  	-Consigna:Generar los procedimientos almacenados (stored procedures) de inserción, modificación y eliminación para cada tabla.
     ---------------------------------------------------------------------
 */
+USE Com5600G15
+GO
 -- =============================================
 -- Crear Persona
 -- =============================================
