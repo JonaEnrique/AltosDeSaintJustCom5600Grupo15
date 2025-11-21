@@ -158,7 +158,3 @@ GO
 SELECT * FROM Consorcio.PersonaUnidad;
 GO
 
--- LIMPIEZA: Eliminar datos de prueba
-DELETE FROM Consorcio.PersonaUnidad WHERE dni IN (12345678, 87654321, 11223344);
-DELETE FROM Consorcio.Persona WHERE dni IN (12345678, 87654321, 11223344);
-GO
