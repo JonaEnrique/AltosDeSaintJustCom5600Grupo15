@@ -105,7 +105,7 @@ EXEC Consorcio.ModificarConsorcio
 
 -- ELIMINAR CONSORCIO
 
-EXEC Consorcio.EliminarConsorcio @id_consorcio = 1;
+EXEC Consorcio.EliminarConsorcio @id_consorcio = 2;
 
 -- ERROR: ID INVALIDO
 EXEC Consorcio.EliminarConsorcio @id_consorcio = 99999;
