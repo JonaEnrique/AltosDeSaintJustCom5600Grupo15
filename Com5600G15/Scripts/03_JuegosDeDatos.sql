@@ -14,13 +14,145 @@
 USE Com5600G15
 GO
 
+
+--LIMPIEZA Y RESET DE IDENTITY
+
+PRINT '========================================';
+PRINT 'INICIO DE TRUNCADO DE TABLAS';
+PRINT '========================================';
+PRINT '';
+
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    -- Deshabilitar todas las constraints de foreign key
+    PRINT '--- Deshabilitando Foreign Keys ---';
+    EXEC sp_MSforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL';
+    PRINT 'Foreign Keys deshabilitadas';
+    PRINT '';
+
+    -- Eliminar datos de tablas en orden inverso a las dependencias
+    PRINT '--- Eliminando datos de Tablas ---';
+    
+    -- Tablas dependientes (primero las "hijas")
+    IF OBJECT_ID('Pago.Prorrateo', 'U') IS NOT NULL
+    BEGIN
+        DELETE FROM Pago.Prorrateo;
+        PRINT 'Tabla Pago.Prorrateo limpiada';
+    END
+
+    IF OBJECT_ID('Pago.PagoAsociado', 'U') IS NOT NULL
+    BEGIN
+        DELETE FROM Pago.PagoAsociado;
+        PRINT 'Tabla Pago.PagoAsociado limpiada';
+    END
+
+    IF OBJECT_ID('Consorcio.PersonaUnidad', 'U') IS NOT NULL
+    BEGIN
+        DELETE FROM Consorcio.PersonaUnidad;
+        PRINT 'Tabla Consorcio.PersonaUnidad limpiada';
+    END
+
+    IF OBJECT_ID('Pago.GastoOrdinario', 'U') IS NOT NULL
+    BEGIN
+        DELETE FROM Pago.GastoOrdinario;
+        PRINT 'Tabla Pago.GastoOrdinario limpiada';
+    END
+
+    IF OBJECT_ID('Pago.GastoExtraordinario', 'U') IS NOT NULL
+    BEGIN
+        DELETE FROM Pago.GastoExtraordinario;
+        PRINT 'Tabla Pago.GastoExtraordinario limpiada';
+    END
+
+    IF OBJECT_ID('Consorcio.EstadoFinanciero', 'U') IS NOT NULL
+    BEGIN
+        DELETE FROM Consorcio.EstadoFinanciero;
+        PRINT 'Tabla Consorcio.EstadoFinanciero limpiada';
+    END
+
+    IF OBJECT_ID('Consorcio.Proveedor', 'U') IS NOT NULL
+    BEGIN
+        DELETE FROM Consorcio.Proveedor;
+        PRINT 'Tabla Consorcio.Proveedor limpiada';
+    END
+
+    -- Tablas intermedias
+    IF OBJECT_ID('Consorcio.UnidadFuncional', 'U') IS NOT NULL
+    BEGIN
+        DELETE FROM Consorcio.UnidadFuncional;
+        PRINT 'Tabla Consorcio.UnidadFuncional limpiada';
+    END
+
+    IF OBJECT_ID('Consorcio.Persona', 'U') IS NOT NULL
+    BEGIN
+        DELETE FROM Consorcio.Persona;
+        PRINT 'Tabla Consorcio.Persona limpiada';
+    END
+
+    -- Tabla principal (sin dependencias)
+    IF OBJECT_ID('Consorcio.Consorcio', 'U') IS NOT NULL
+    BEGIN
+        DELETE FROM Consorcio.Consorcio;
+        PRINT 'Tabla Consorcio.Consorcio limpiada';
+    END
+
+    PRINT '';
+    PRINT '--- Rehabilitando Foreign Keys ---';
+    -- Rehabilitar todas las constraints de foreign key
+    EXEC sp_MSforeachtable 'ALTER TABLE ? WITH CHECK CHECK CONSTRAINT ALL';
+    PRINT 'Foreign Keys rehabilitadas';
+    PRINT '';
+
+    -- Reiniciar los IDENTITY de todas las tablas
+    PRINT '--- Reiniciando IDENTITY ---';
+    
+    DBCC CHECKIDENT ('Consorcio.Consorcio', RESEED, 0);
+    DBCC CHECKIDENT ('Consorcio.UnidadFuncional', RESEED, 0);
+    DBCC CHECKIDENT ('Consorcio.Proveedor', RESEED, 0);
+    DBCC CHECKIDENT ('Consorcio.PersonaUnidad', RESEED, 0);
+    DBCC CHECKIDENT ('Consorcio.EstadoFinanciero', RESEED, 0);
+    DBCC CHECKIDENT ('Pago.GastoExtraordinario', RESEED, 0);
+    DBCC CHECKIDENT ('Pago.GastoOrdinario', RESEED, 0);
+    DBCC CHECKIDENT ('Pago.PagoAsociado', RESEED, 0);
+    DBCC CHECKIDENT ('Pago.Prorrateo', RESEED, 0);
+    
+    PRINT 'IDENTITY reiniciados';
+    PRINT '';
+
+    COMMIT TRANSACTION;
+
+    PRINT '========================================';
+    PRINT 'TRUNCADO COMPLETADO EXITOSAMENTE';
+    PRINT '========================================';
+
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0
+        ROLLBACK TRANSACTION;
+
+    PRINT '';
+    PRINT '========================================';
+    PRINT 'ERROR AL TRUNCAR TABLAS';
+    PRINT '========================================';
+    PRINT 'Error: ' + ERROR_MESSAGE();
+    PRINT 'Línea: ' + CAST(ERROR_LINE() AS VARCHAR);
+    
+    -- Asegurar que las FK estén habilitadas incluso si hay error
+    PRINT '';
+    PRINT 'Rehabilitando Foreign Keys...';
+    EXEC sp_MSforeachtable 'ALTER TABLE ? WITH CHECK CHECK CONSTRAINT ALL';
+    
+END CATCH
+GO
+
 --Consorcios
 DECLARE @id_consorcio1 INT, @id_consorcio2 INT, @id_consorcio3 INT, @id_consorcio4 INT, @id_consorcio5 INT;
 
 -- 1. Consorcio con baulera y cochera
 EXEC Consorcio.CrearConsorcio 
-    @nombre = 'Azcuenaga',
-    @direccion = 'Azcuenaga 1550, CABA',
+    @nombre = 'Los Aromos',
+    @direccion = 'Av. Belgrano 2450, CABA',
     @cant_unidades_funcionales = 12,
     @m2_totales = 1800.00,
     @vencimiento1 = '2025-11-10',
@@ -29,8 +161,8 @@ EXEC Consorcio.CrearConsorcio
 
 -- 2. Consorcio sin baulera ni cochera
 EXEC Consorcio.CrearConsorcio 
-    @nombre = 'Alzaga',
-    @direccion = 'Alzaga 234, CABA',
+    @nombre = 'Las Acacias',
+    @direccion = 'Amenábar 1320, CABA',
     @cant_unidades_funcionales = 10,
     @m2_totales = 950.00,
     @vencimiento1 = '2025-11-10',
@@ -39,8 +171,8 @@ EXEC Consorcio.CrearConsorcio
 
 -- 3. Consorcio con baulera solamente
 EXEC Consorcio.CrearConsorcio 
-    @nombre = 'Alberdi',
-    @direccion = 'Av Alberdi 3050, CABA',
+    @nombre = 'Altos del Parque',
+    @direccion = 'Av. Directorio 5200, CABA',
     @cant_unidades_funcionales = 11,
     @m2_totales = 1200.00,
     @vencimiento1 = '2025-11-10',
@@ -49,8 +181,8 @@ EXEC Consorcio.CrearConsorcio
 
 -- 4. Consorcio con cochera solamente
 EXEC Consorcio.CrearConsorcio 
-    @nombre = 'Unzue',
-    @direccion = 'Unzue 1289, CABA',
+    @nombre = 'Portal Caballito',
+    @direccion = 'Doblas 780, CABA',
     @cant_unidades_funcionales = 14,
     @m2_totales = 2100.00,
     @vencimiento1 = '2025-11-10',
@@ -59,8 +191,8 @@ EXEC Consorcio.CrearConsorcio
 
 -- 5. Consorcio con baulera y cochera
 EXEC Consorcio.CrearConsorcio 
-    @nombre = 'Pereyra Iraola',
-    @direccion = 'Av Pereyra Iraola 400, Vicente Lopez',
+    @nombre = 'Rio Norte',
+    @direccion = 'Av. Maipú 3100, Vicente López',
     @cant_unidades_funcionales = 15,
     @m2_totales = 2500.00,
     @vencimiento1 = '2025-11-10',
@@ -71,7 +203,7 @@ EXEC Consorcio.CrearConsorcio
 DECLARE @id_proveedor INT;
 
 -- ==========================================================
--- PROVEEDORES PARA CONSORCIO 1 - AZCUENAGA
+-- PROVEEDORES PARA CONSORCIO 1 - Los Aromos
 -- ==========================================================
 EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio1, @nombre_proveedor = 'Banco Ciudad', @cuenta = 'CTA-001', @tipo = 'BANCARIOS', @id_proveedor = @id_proveedor OUTPUT;
 EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio1, @nombre_proveedor = 'Limpieza Total SRL', @cuenta = 'CTA-002', @tipo = 'LIMPIEZA', @id_proveedor = @id_proveedor OUTPUT;
@@ -81,7 +213,7 @@ EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio1, @nombre_proveedor 
 EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio1, @nombre_proveedor = 'Edesur', @cuenta = 'CTA-006', @tipo = 'SERVICIOS PUBLICOS-Luz', @id_proveedor = @id_proveedor OUTPUT;
 
 -- ==========================================================
--- PROVEEDORES PARA CONSORCIO 2 - ALZAGA
+-- PROVEEDORES PARA CONSORCIO 2 - Las Acacias
 -- ==========================================================
 EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio2, @nombre_proveedor = 'Banco Galicia', @cuenta = 'CTA-101', @tipo = 'BANCARIOS', @id_proveedor = @id_proveedor OUTPUT;
 EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio2, @nombre_proveedor = 'Clean&Go', @cuenta = 'CTA-102', @tipo = 'LIMPIEZA', @id_proveedor = @id_proveedor OUTPUT;
@@ -91,7 +223,7 @@ EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio2, @nombre_proveedor 
 EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio2, @nombre_proveedor = 'Edenor', @cuenta = 'CTA-106', @tipo = 'SERVICIOS PUBLICOS-Luz', @id_proveedor = @id_proveedor OUTPUT;
 
 -- ==========================================================
--- PROVEEDORES PARA CONSORCIO 3 - ALBERDI
+-- PROVEEDORES PARA CONSORCIO 3 - Altos del Parque
 -- ==========================================================
 EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio3, @nombre_proveedor = 'Banco Nacion', @cuenta = 'CTA-201', @tipo = 'BANCARIOS', @id_proveedor = @id_proveedor OUTPUT;
 EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio3, @nombre_proveedor = 'Limpio YA', @cuenta = 'CTA-202', @tipo = 'LIMPIEZA', @id_proveedor = @id_proveedor OUTPUT;
@@ -101,7 +233,7 @@ EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio3, @nombre_proveedor 
 EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio3, @nombre_proveedor = 'Edesur', @cuenta = 'CTA-206', @tipo = 'SERVICIOS PUBLICOS-Luz', @id_proveedor = @id_proveedor OUTPUT;
 
 -- ==========================================================
--- PROVEEDORES PARA CONSORCIO 4 - UNZUE
+-- PROVEEDORES PARA CONSORCIO 4 - Portal Caballito
 -- ==========================================================
 EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio4, @nombre_proveedor = 'Banco BBVA', @cuenta = 'CTA-301', @tipo = 'BANCARIOS', @id_proveedor = @id_proveedor OUTPUT;
 EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio4, @nombre_proveedor = 'Limpieza Norte', @cuenta = 'CTA-302', @tipo = 'LIMPIEZA', @id_proveedor = @id_proveedor OUTPUT;
@@ -111,7 +243,7 @@ EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio4, @nombre_proveedor 
 EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio4, @nombre_proveedor = 'Edenor', @cuenta = 'CTA-306', @tipo = 'SERVICIOS PUBLICOS-Luz', @id_proveedor = @id_proveedor OUTPUT;
 
 -- ==========================================================
--- PROVEEDORES PARA CONSORCIO 5 - PEREYRA IRAOLA
+-- PROVEEDORES PARA CONSORCIO 5 - Rio Norte
 -- ==========================================================
 EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio5, @nombre_proveedor = 'Banco Santander', @cuenta = 'CTA-401', @tipo = 'BANCARIOS', @id_proveedor = @id_proveedor OUTPUT;
 EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio5, @nombre_proveedor = 'Servicios Limpieza Pro', @cuenta = 'CTA-402', @tipo = 'LIMPIEZA', @id_proveedor = @id_proveedor OUTPUT;
@@ -122,7 +254,7 @@ EXEC Consorcio.CrearProveedor @id_consorcio = @id_consorcio5, @nombre_proveedor 
 
 GO
 -- =============================================
--- UNIDADES FUNCIONALES - AZCUENAGA (id_consorcio = 1)
+-- UNIDADES FUNCIONALES - Los Aromos (id_consorcio = 1)
 -- Con baulera y cochera
 -- =============================================
 DECLARE @id_unidad INT;
@@ -141,7 +273,7 @@ EXEC Consorcio.CrearUnidadFuncional 1, '6', 'A', 8.3, 75.0, 4.0, 12.0, @id_unida
 EXEC Consorcio.CrearUnidadFuncional 1, '6', 'B', 8.3, 70.0, 3.5, 10.0, @id_unidad OUTPUT;
 
 -- =============================================
--- UNIDADES FUNCIONALES - ALZAGA (id_consorcio = 2)
+-- UNIDADES FUNCIONALES - Las Acacias (id_consorcio = 2)
 -- Sin baulera ni cochera
 -- =============================================
 EXEC Consorcio.CrearUnidadFuncional 2, '1', 'A', 10.0, 60.0, 0, 0, @id_unidad OUTPUT;
@@ -156,7 +288,7 @@ EXEC Consorcio.CrearUnidadFuncional 2, '5', 'A', 10.0, 65.0, 0, 0, @id_unidad OU
 EXEC Consorcio.CrearUnidadFuncional 2, '5', 'B', 10.0, 62.0, 0, 0, @id_unidad OUTPUT;
 
 -- =============================================
--- UNIDADES FUNCIONALES - ALBERDI (id_consorcio = 3)
+-- UNIDADES FUNCIONALES - Altos del Parque (id_consorcio = 3)
 -- Solo baulera
 -- =============================================
 EXEC Consorcio.CrearUnidadFuncional 3, '1', 'A', 9.1, 55.0, 3.0, 0, @id_unidad OUTPUT;
@@ -172,7 +304,7 @@ EXEC Consorcio.CrearUnidadFuncional 3, '5', 'B', 9.1, 64.0, 3.0, 0, @id_unidad O
 EXEC Consorcio.CrearUnidadFuncional 3, '6', 'A', 9.1, 65.0, 3.0, 0, @id_unidad OUTPUT;
 
 -- =============================================
--- UNIDADES FUNCIONALES - UNZUE (id_consorcio = 4)
+-- UNIDADES FUNCIONALES - Portal Caballito (id_consorcio = 4)
 -- Solo cochera
 -- =============================================
 EXEC Consorcio.CrearUnidadFuncional 4, '1', 'A', 7.1, 68.0, 0, 11.0, @id_unidad OUTPUT;
@@ -191,7 +323,7 @@ EXEC Consorcio.CrearUnidadFuncional 4, '7', 'A', 7.1, 74.0, 0, 11.0, @id_unidad 
 EXEC Consorcio.CrearUnidadFuncional 4, '7', 'B', 7.1, 75.0, 0, 10.0, @id_unidad OUTPUT;
 
 -- =============================================
--- UNIDADES FUNCIONALES - PEREYRA IRAOLA (id_consorcio = 5)
+-- UNIDADES FUNCIONALES - Rio Norte (id_consorcio = 5)
 -- Con baulera y cochera
 -- =============================================
 EXEC Consorcio.CrearUnidadFuncional 5, '1', 'A', 6.7, 68.0, 3.5, 10.0, @id_unidad OUTPUT;
@@ -263,7 +395,7 @@ DECLARE @fecha DATE = '2024-01-15'; --fecha al azar, arbitraria
 DECLARE @dni_actual INT; --variable auxiliar para enviar el dni actual ya que SQL SERVER no permite realizar operacones aritmeticas en los EXEC
 
 -- =============================================
--- Azcuenaga (id_consorcio = 1) -> 12 unidades
+-- Los Aromos (id_consorcio = 1) -> 12 unidades
 -- =============================================
 DECLARE @id_unidad INT = 1;
 WHILE @id_unidad <= 12
@@ -276,7 +408,7 @@ BEGIN
 END;
 
 -- =============================================
--- Alzaga (id_consorcio = 2) -> 10 unidades (IDs 13–22)
+-- Las Acacias (id_consorcio = 2) -> 10 unidades (IDs 13–22)
 -- =============================================
 SET @id_unidad = 13;
 WHILE @id_unidad <= 22
@@ -289,7 +421,7 @@ BEGIN
 END;
 
 -- =============================================
--- Alberdi (id_consorcio = 3) -> 11 unidades (IDs 23–33)
+-- Altos del Parque (id_consorcio = 3) -> 11 unidades (IDs 23–33)
 -- =============================================
 SET @id_unidad = 23;
 WHILE @id_unidad <= 33
@@ -302,7 +434,7 @@ BEGIN
 END;
 
 -- =============================================
--- Unzue (id_consorcio = 4) -> 14 unidades (IDs 34–47)
+-- Portal Caballito (id_consorcio = 4) -> 14 unidades (IDs 34–47)
 -- =============================================
 SET @id_unidad = 34;
 WHILE @id_unidad <= 47
@@ -315,7 +447,7 @@ BEGIN
 END;
 
 -- =============================================
--- Pereyra Iraola (id_consorcio = 5) -> 15 unidades (IDs 48–62)
+-- Rio Norte (id_consorcio = 5) -> 15 unidades (IDs 48–62)
 -- =============================================
 SET @id_unidad = 48;
 WHILE @id_unidad <= 62
@@ -334,7 +466,7 @@ END;
 DECLARE @id_gasto INT;
 
 -- ==========================================================
--- CONSORCIO 1 - AZCUENAGA (proveedores 1..6)
+-- CONSORCIO 1 - Los Aromos (proveedores 1..6)
 -- ==========================================================
 -- Agosto 2025
 EXEC Pago.CrearGastoOrdinario @id_consorcio = 1, @tipo_gasto = 'Limpieza', @fecha = '2025-08-10', @importe = 180000, @nro_factura = 101, @id_proveedor = 2, @descripcion = 'Servicio de limpieza mensual - agosto', @id_gasto = @id_gasto OUTPUT;
@@ -350,7 +482,7 @@ EXEC Pago.CrearGastoExtraordinario @id_consorcio = 1, @detalle = 'Reparacion de 
 
 
 -- ==========================================================
--- CONSORCIO 2 - ALZAGA (proveedores 7..12)
+-- CONSORCIO 2 - Las Acacias (proveedores 7..12)
 -- ==========================================================
 -- Agosto 2025
 EXEC Pago.CrearGastoOrdinario @id_consorcio = 2, @tipo_gasto = 'Limpieza', @fecha = '2025-08-10', @importe = 170000, @nro_factura = 103, @id_proveedor = 8, @descripcion = 'Servicio de limpieza mensual - agosto', @id_gasto = @id_gasto OUTPUT;
@@ -366,7 +498,7 @@ EXEC Pago.CrearGastoExtraordinario @id_consorcio = 2, @detalle = 'Cambio de sist
 
 
 -- ==========================================================
--- CONSORCIO 3 - ALBERDI (proveedores 13..18)
+-- CONSORCIO 3 - Altos del Parque (proveedores 13..18)
 -- ==========================================================
 -- Agosto 2025
 EXEC Pago.CrearGastoOrdinario @id_consorcio = 3, @tipo_gasto = 'Limpieza', @fecha = '2025-08-10', @importe = 160000, @nro_factura = 105, @id_proveedor = 14, @descripcion = 'Servicio de limpieza mensual - agosto', @id_gasto = @id_gasto OUTPUT;
@@ -383,7 +515,7 @@ EXEC Pago.CrearGastoExtraordinario @id_consorcio = 3, @detalle = 'Pintura de fac
 
 
 -- ==========================================================
--- CONSORCIO 4 - UNZUE (proveedores 19..24)
+-- CONSORCIO 4 - Portal Caballito (proveedores 19..24)
 -- ==========================================================
 -- Agosto 2025
 EXEC Pago.CrearGastoOrdinario @id_consorcio = 4, @tipo_gasto = 'Limpieza', @fecha = '2025-08-10', @importe = 185000, @nro_factura = 107, @id_proveedor = 20, @descripcion = 'Servicio de limpieza mensual - agosto', @id_gasto = @id_gasto OUTPUT;
@@ -399,7 +531,7 @@ EXEC Pago.CrearGastoExtraordinario @id_consorcio = 4, @detalle = 'Cambio de asce
 
 
 -- ==========================================================
--- CONSORCIO 5 - PEREYRA IRAOLA (proveedores 25..30)
+-- CONSORCIO 5 - Rio Norte (proveedores 25..30)
 -- ==========================================================
 -- Agosto 2025
 EXEC Pago.CrearGastoOrdinario @id_consorcio = 5, @tipo_gasto = 'Limpieza', @fecha = '2025-08-10', @importe = 178000, @nro_factura = 109, @id_proveedor = 26, @descripcion = 'Servicio de limpieza mensual - agosto', @id_gasto = @id_gasto OUTPUT;
@@ -807,4 +939,5 @@ BEGIN
 END;
 
 CLOSE cur_pago_julio;
+
 DEALLOCATE cur_pago_julio;
